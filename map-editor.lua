@@ -1,3 +1,5 @@
+require 'tile-controls'
+
 MapEditor = {}
 MapEditor.__index = MapEditor
 
@@ -35,6 +37,8 @@ local TILE_GROUND_CORNER_TOP_RIGHT = getTileIndex(5, 2)
 local TILE_GROUND_CORNER_BOTTOM_RIGHT = getTileIndex(5, 3)
 local TILE_GROUND_CORNER_BOTTOM_LEFT = getTileIndex(5, 4)
 
+local LEFT_MOUSE_BUTTON = 1
+
 function MapEditor:create(spritesheetName)
    local spritesheet = love.graphics.newImage(spritesheetName .. '.png')
 
@@ -48,8 +52,17 @@ function MapEditor:create(spritesheetName)
       tiles = {},
       playerSpawnX = -1,
       playerSpawnY = -1,
+      tileControls = TileControls:create({ r = 1, g = 0, b = 0 }, 32, 32),
    }
    setmetatable(this, self)
+
+   this.tileControls:onMouseDown(function(column, row, button)
+      local tileToCreate = (button == LEFT_MOUSE_BUTTON) and TILE_GROUND or TILE_EMPTY
+      if this:getTile(column, row) ~= tileToCreate then
+         this:setTile(column, row, tileToCreate)
+         this:recreateSpriteBatch()
+      end
+   end)
 
    this.tileSprites = generateQuads(spritesheet, 32, 32)
 
@@ -66,6 +79,10 @@ function MapEditor:create(spritesheetName)
    this:recreateSpriteBatch()
 
    return this
+end
+
+function MapEditor:update()
+   self.tileControls:update()
 end
 
 function MapEditor:getTile(column, row)
@@ -123,4 +140,5 @@ end
 
 function MapEditor:render()
    love.graphics.draw(self.spriteBatch)
+   self.tileControls:render()
 end

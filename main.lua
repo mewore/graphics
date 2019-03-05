@@ -25,9 +25,10 @@ end
 function love.update()
    love.keyboard.keysPressed = {}
    love.keyboard.keysReleased = {}
+   mapEditor:update()
 end
 
 function love.draw()
-   love.graphics.clear(0.4, 0.66, 0.95, 1.0)
+   love.graphics.clear(1, 1, 1, 1)
    mapEditor:render()
 end
