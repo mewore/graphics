@@ -1,4 +1,5 @@
 require 'tile-controls'
+require 'map-encoder'
 
 MapEditor = {}
 MapEditor.__index = MapEditor
@@ -7,6 +8,11 @@ local MAP_WIDTH = 256
 local MAP_HEIGHT = 32
 
 local COLUMN_COUNT = 4
+
+local SAVE_BUTTON = 's'
+local LOAD_BUTTON = 'l'
+local MAP_SAVE_FILE_NAME = 'test.map'
+local mapEncoder = MapEncoder:create()
 
 local function getTileIndex(row, column)
    return (row - 1) * COLUMN_COUNT + column
@@ -84,6 +90,17 @@ function MapEditor:create(spritesheetName)
 end
 
 function MapEditor:update()
+   if love.keyboard.keysPressed[SAVE_BUTTON] then
+      mapEncoder:saveToFile(MAP_SAVE_FILE_NAME, self)
+   elseif love.keyboard.keysPressed[LOAD_BUTTON] then
+      local data = mapEncoder:loadFromFile(MAP_SAVE_FILE_NAME)
+      self.tileWidth = data.tileWidth
+      self.tileHeight = data.tileHeight
+      self.mapWidth = data.mapWidth
+      self.mapHeight = data.mapHeight
+      self.tiles = data.tiles
+      self:recreateSpriteBatch()
+   end
    self.tileControls:update()
 end
 
@@ -106,7 +123,7 @@ function MapEditor:recreateSpriteBatch()
          local y = (row - 1) * self.tileHeight
          local tile = self:getTile(column, row)
          if tile == nil then
-            print('Empty tile:', column, row)
+            error('nil tile at column ' .. column .. ', row ' .. row)
          elseif tile == TILE_GROUND then
             local hasLeft = self:getTile(column - 1, row) == TILE_GROUND
             local hasRight = self:getTile(column + 1, row) == TILE_GROUND

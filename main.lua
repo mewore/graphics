@@ -23,9 +23,9 @@ function love.keyreleased(key)
 end
 
 function love.update()
+   mapEditor:update()
    love.keyboard.keysPressed = {}
    love.keyboard.keysReleased = {}
-   mapEditor:update()
 end
 
 function love.draw()
