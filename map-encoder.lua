@@ -1,3 +1,5 @@
+require 'native-file'
+
 MapEncoder = {}
 MapEncoder.__index = MapEncoder
 
@@ -43,17 +45,8 @@ function MapEncoder:saveToFile(filename, map)
       mapHeight = map.mapHeight,
       tiles = encodeMapTiles(map.tiles, map.mapWidth, map.mapHeight),
    })
-   local file = love.filesystem.newFile(filename)
-   local fileOpenOk, fileOpenError = file:open('w')
-   if fileOpenOk then
-      local fileWriteOk, fileWriteError = file:write(encoded)
-      if not fileWriteOk then
-         error('Failed to write to file ' .. filename .. ': ' .. fileWriteError)
-      end
-      file:close()
-   else
-      error('Failed to open file ' .. filename .. ' for write: ' .. fileOpenError)
-   end
+   local file = NativeFile:create(filename)
+   file:write(encoded)
 end
 
 -- DECODING
@@ -84,10 +77,8 @@ end
 
 function MapEncoder:loadFromFile(filename)
    print('Loading from ' .. filename)
-   local encoded, sizeOrReadError = love.filesystem.read(filename)
-   if encoded == nil then
-      error('Failed to read file ' .. filename .. ': ' .. sizeOrReadError)
-   end
+   local file = NativeFile:create(filename)
+   local encoded = file:read(filename)
    local data = decode(encoded)
    data.tiles = decodeMapTiles(data.tiles, data.mapWidth, data.mapHeight)
    return data

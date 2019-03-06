@@ -11,7 +11,7 @@ local COLUMN_COUNT = 4
 
 local SAVE_BUTTON = 's'
 local LOAD_BUTTON = 'l'
-local MAP_SAVE_FILE_NAME = 'test.map'
+local MAP_SAVE_FILE_NAME = love.filesystem.getWorkingDirectory() .. '/maps/test.map'
 local mapEncoder = MapEncoder:create()
 
 local function getTileIndex(row, column)
