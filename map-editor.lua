@@ -14,22 +14,29 @@ local LOAD_BUTTON = "l"
 local MAP_SAVE_FILE_NAME = love.filesystem.getWorkingDirectory() .. "/maps/test.map"
 local mapEncoder = MapEncoder:create()
 
+--- Get the index of a tile if counting started at 1 and continued from left to right and top to bottom as text does.
+-- @param row {int}
+-- @param column {int}
+-- @returns {int}
 local function getTileIndex(row, column)
    return (row - 1) * COLUMN_COUNT + column
 end
 
+--- Divide a spritesheet into quads. The dimensions of the spritesheet must be divisible by the tile dimensions!
+-- @param spritesheet {LOVE.Image} - https://love2d.org/wiki/Image
+-- @param tileWidth {int}
+-- @param tileHeight {int}
+-- @returns {LOVE.Quad[]} - https://love2d.org/wiki/Quad
 local function generateQuads(spritesheet, tileWidth, tileHeight)
    local sheetWidth = spritesheet:getWidth() / tileWidth
    local sheetHeight = spritesheet:getHeight() / tileHeight
 
-   local sheetCounter = 1
    local quads = {}
 
    for y = 0, sheetHeight - 1 do
       for x = 0, sheetWidth - 1 do
-         quads[sheetCounter] = love.graphics.newQuad(x * tileWidth, y * tileHeight, tileWidth, tileHeight,
+         quads[#quads + 1] = love.graphics.newQuad(x * tileWidth, y * tileHeight, tileWidth, tileHeight,
             spritesheet:getDimensions())
-         sheetCounter = sheetCounter + 1
       end
    end
 
@@ -45,6 +52,8 @@ local TILE_GROUND_CORNER_BOTTOM_LEFT = getTileIndex(5, 4)
 
 local LEFT_MOUSE_BUTTON = 1
 
+--- Displays a map and allows the user to edit it
+-- @param spritesheetName {string} - The name (minus the extension) of the spritesheet to use for the tiles
 function MapEditor:create(spritesheetName)
    local spritesheet = love.graphics.newImage(spritesheetName .. ".png")
 
@@ -89,6 +98,7 @@ function MapEditor:create(spritesheetName)
    return this
 end
 
+--- LOVE update callback
 function MapEditor:update()
    if love.keyboard.keysPressed[SAVE_BUTTON] then
       mapEncoder:saveToFile(MAP_SAVE_FILE_NAME, self)
@@ -104,6 +114,10 @@ function MapEditor:update()
    self.tileControls:update()
 end
 
+--- Gets the tile from a specified cell
+-- @param column {int} - The column of the cell
+-- @param row {int} - The row of the cell
+-- @returns {int}
 function MapEditor:getTile(column, row)
    if column <= 0 or row <= 0 or column > self.mapWidth or row > self.mapHeight then
       return TILE_EMPTY
@@ -111,10 +125,16 @@ function MapEditor:getTile(column, row)
    return self.tiles[(row - 1) * self.mapWidth + column]
 end
 
+--- Sets the tile at a specified cell
+-- @param column {int} - The column of the cell
+-- @param row {int} - The row of the cell
+-- @param tile {int} - The ID/index of the new tile
 function MapEditor:setTile(column, row, tile)
    self.tiles[(row - 1) * self.mapWidth + column] = tile
 end
 
+--- Updates the sprite batch with sprites corresponding to the current tiles.
+-- NOTE: A sprite batch is used for efficient rendering.
 function MapEditor:recreateSpriteBatch()
    self.spriteBatch = love.graphics.newSpriteBatch(self.spritesheet, self.mapWidth * self.mapHeight)
    for row = 1, self.mapHeight do
@@ -157,7 +177,8 @@ function MapEditor:recreateSpriteBatch()
    end
 end
 
-function MapEditor:render()
+--- LOVE draw callback
+function MapEditor:draw()
    love.graphics.draw(self.spriteBatch)
-   self.tileControls:render()
+   self.tileControls:draw()
 end

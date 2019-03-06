@@ -6,6 +6,7 @@ MapEncoder.__index = MapEncoder
 local KEY_VALUE_SEPARATOR = " = "
 local TILE_BYTE_OFFSET = 65
 
+--- A map encoder handles the ENcoding and DEcoding of maps to/from files
 function MapEncoder:create()
    local this = {}
    setmetatable(this, self)
@@ -14,6 +15,9 @@ end
 
 -- ENCODING
 
+--- Turns an array of tiles into a string, where each character is an ASCII encoding of the corresponding tile int value
+-- @param tiles {int[]} - The source tiles
+-- @returns {string}
 local function encodeMapTiles(tiles)
    local tileArray = {}
    for index, value in ipairs(tiles) do
@@ -22,7 +26,9 @@ local function encodeMapTiles(tiles)
    return table.concat(tileArray, "")
 end
 
--- Turns a table into a set of key-value pairs. The values must be string or cast-able to string
+--- Turns a table into a set of key-value pairs. The values must be string or cast-able to string
+-- @param tableToEncode {table}
+-- @returns {string}
 local function encode(tableToEncode)
    local encodedArray = {}
    for k, v in pairs(tableToEncode) do
@@ -36,6 +42,9 @@ local function encode(tableToEncode)
    return table.concat(encodedArray, "\n") .. "\n"
 end
 
+--- Encodes and saves map data into a file
+-- @param filename {string}
+-- @param map {table}
 function MapEncoder:saveToFile(filename, map)
    print("Saving to " .. filename)
    local encoded = encode({
@@ -51,15 +60,21 @@ end
 
 -- DECODING
 
-local function decodeMapTiles(rawTiles, width, height)
+--- Decode a tile string into an array of tiles
+-- @param rawTiles {string} - The source encoded tiles
+-- @returns {int[]} - The decoded tiles
+local function decodeMapTiles(rawTiles)
    local tiles = {}
-   local length = width * height
+   local length = string.len(rawTiles)
    for index = 1, length do
       tiles[index] = string.byte(rawTiles, index) - TILE_BYTE_OFFSET
    end
    return tiles
 end
 
+--- Decode map data from a string
+-- @param rawData {string} - The source encoded data
+-- @returns {table} - The decoded data
 local function decode(rawData)
    local result = {}
    for k, v in string.gmatch(rawData, "([^\n]+) = ([^\n]+)\n") do
@@ -75,11 +90,14 @@ local function decode(rawData)
    return result
 end
 
+--- Load map data from a file
+-- @param filename {string} - The file to load the map from
+-- @returns {table} - The decoded data
 function MapEncoder:loadFromFile(filename)
    print("Loading from " .. filename)
    local file = NativeFile:create(filename)
    local encoded = file:read(filename)
    local data = decode(encoded)
-   data.tiles = decodeMapTiles(data.tiles, data.mapWidth, data.mapHeight)
+   data.tiles = decodeMapTiles(data.tiles)
    return data
 end

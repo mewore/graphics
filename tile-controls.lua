@@ -5,6 +5,10 @@ TileControls.__index = TileControls
 
 local mathUtils = MathUtils:create()
 
+--- Tile controls allow the user to provide tile-based input (i.e. clicking in a grid)
+-- @param colour {r: number, g: number, b: number} - The colour of the tile the user has hovered over
+-- @param tileWidth {number} - The width of each tile, in pixels
+-- @param tileHeight {number} - The height of each tile, in pixels
 function TileControls:create(colour, tileWidth, tileHeight)
    local this = {
       colour = colour,
@@ -21,10 +25,13 @@ function TileControls:create(colour, tileWidth, tileHeight)
    return this
 end
 
+--- Add a handler for when the mouse is held down
+-- @param callback {function}
 function TileControls:onMouseDown(callback)
    self.mouseDownCallback = callback
 end
 
+--- LOVE update callback
 function TileControls:update()
    self.hoveredColumn = math.floor(love.mouse.getX() / self.tileWidth) + 1
    self.hoveredRow = math.floor(love.mouse.getY() / self.tileHeight) + 1
@@ -46,7 +53,8 @@ function TileControls:update()
    self.mouseIsDown = mouseIsDown
 end
 
-function TileControls:render()
+--- LOVE draw callback
+function TileControls:draw()
    local leftX = (self.hoveredColumn - 1) * self.tileWidth
    local topY = (self.hoveredRow - 1) * self.tileHeight
 
