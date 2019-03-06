@@ -1,9 +1,9 @@
-require 'native-file'
+require "native-file"
 
 MapEncoder = {}
 MapEncoder.__index = MapEncoder
 
-local KEY_VALUE_SEPARATOR = ' = '
+local KEY_VALUE_SEPARATOR = " = "
 local TILE_BYTE_OFFSET = 65
 
 function MapEncoder:create()
@@ -19,25 +19,25 @@ local function encodeMapTiles(tiles)
    for index, value in ipairs(tiles) do
       tileArray[index] = string.char(TILE_BYTE_OFFSET + value)
    end
-   return table.concat(tileArray, '')
+   return table.concat(tileArray, "")
 end
 
 -- Turns a table into a set of key-value pairs. The values must be string or cast-able to string
 local function encode(tableToEncode)
    local encodedArray = {}
    for k, v in pairs(tableToEncode) do
-      if type(v) == 'table' then
-         error('Cannot encode a table value')
+      if type(v) == "table" then
+         error("Cannot encode a table value")
       elseif v == nil then
-         error('Cannot encode a nil value')
+         error("Cannot encode a nil value")
       end
       encodedArray[#encodedArray + 1] = k .. KEY_VALUE_SEPARATOR .. v
    end
-   return table.concat(encodedArray, '\n') .. '\n'
+   return table.concat(encodedArray, "\n") .. "\n"
 end
 
 function MapEncoder:saveToFile(filename, map)
-   print('Saving to ' .. filename)
+   print("Saving to " .. filename)
    local encoded = encode({
       tileWidth = map.tileWidth,
       tileHeight = map.tileHeight,
@@ -62,7 +62,7 @@ end
 
 local function decode(rawData)
    local result = {}
-   for k, v in string.gmatch(rawData, '([^\n]+) = ([^\n]+)\n') do
+   for k, v in string.gmatch(rawData, "([^\n]+) = ([^\n]+)\n") do
       result[k] = v
    end
 
@@ -76,7 +76,7 @@ local function decode(rawData)
 end
 
 function MapEncoder:loadFromFile(filename)
-   print('Loading from ' .. filename)
+   print("Loading from " .. filename)
    local file = NativeFile:create(filename)
    local encoded = file:read(filename)
    local data = decode(encoded)

@@ -1,4 +1,4 @@
-require 'math-utils'
+require "math-utils"
 
 TileControls = {}
 TileControls.__index = TileControls
@@ -51,8 +51,8 @@ function TileControls:render()
    local topY = (self.hoveredRow - 1) * self.tileHeight
 
    love.graphics.setColor(self.colour.r, self.colour.g, self.colour.b, 0.3)
-   love.graphics.rectangle('fill', leftX, topY, self.tileWidth, self.tileHeight)
+   love.graphics.rectangle("fill", leftX, topY, self.tileWidth, self.tileHeight)
    love.graphics.setColor(self.colour.r, self.colour.g, self.colour.b, 1)
-   love.graphics.rectangle('line', leftX, topY, self.tileWidth, self.tileHeight)
+   love.graphics.rectangle("line", leftX, topY, self.tileWidth, self.tileHeight)
    love.graphics.reset()
 end

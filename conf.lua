@@ -1,8 +1,8 @@
 function love.conf(t)
-   t.identity = 'graphics'
+   t.identity = "graphics"
    t.appendidentity = true
-   t.author = 'Mewore'
-   t.title = 'Graphics'
+   t.author = "Mewore"
+   t.title = "Graphics"
    -- Attach a console (boolean, Windows only)
    t.console = true
    -- Enable release mode (boolean)

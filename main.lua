@@ -1,24 +1,24 @@
-require 'map-editor'
+require "map-editor"
 
-local mapEditor = MapEditor:create('tiles')
+local mapEditor = MapEditor:create("tiles")
 
 love.keyboard.keysPressed = {}
 love.keyboard.keysReleased = {}
 
 function love.load()
-   love.graphics.setDefaultFilter('nearest', 'nearest')
+   love.graphics.setDefaultFilter("nearest", "nearest")
 end
 
 function love.keypressed(key)
-   if key == 'escape' then
+   if key == "escape" then
       love.event.quit()
    end
-   print('Pressed:', key)
+   print("Pressed:", key)
    love.keyboard.keysPressed[key] = true
 end
 
 function love.keyreleased(key)
-   print('Released:', key)
+   print("Released:", key)
    love.keyboard.keysReleased[key] = true
 end
 

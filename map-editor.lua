@@ -1,5 +1,5 @@
-require 'tile-controls'
-require 'map-encoder'
+require "tile-controls"
+require "map-encoder"
 
 MapEditor = {}
 MapEditor.__index = MapEditor
@@ -9,9 +9,9 @@ local MAP_HEIGHT = 32
 
 local COLUMN_COUNT = 4
 
-local SAVE_BUTTON = 's'
-local LOAD_BUTTON = 'l'
-local MAP_SAVE_FILE_NAME = love.filesystem.getWorkingDirectory() .. '/maps/test.map'
+local SAVE_BUTTON = "s"
+local LOAD_BUTTON = "l"
+local MAP_SAVE_FILE_NAME = love.filesystem.getWorkingDirectory() .. "/maps/test.map"
 local mapEncoder = MapEncoder:create()
 
 local function getTileIndex(row, column)
@@ -46,7 +46,7 @@ local TILE_GROUND_CORNER_BOTTOM_LEFT = getTileIndex(5, 4)
 local LEFT_MOUSE_BUTTON = 1
 
 function MapEditor:create(spritesheetName)
-   local spritesheet = love.graphics.newImage(spritesheetName .. '.png')
+   local spritesheet = love.graphics.newImage(spritesheetName .. ".png")
 
    local this = {
       spritesheet = spritesheet,
@@ -79,7 +79,7 @@ function MapEditor:create(spritesheetName)
       for column = 1, this.mapWidth do
          this:setTile(column, row, (math.random() > 0.3) and TILE_EMPTY or TILE_GROUND)
          if this:getTile(column, row) == nil then
-            print('BAD at:', column, row)
+            print("BAD at:", column, row)
          end
       end
    end
@@ -123,7 +123,7 @@ function MapEditor:recreateSpriteBatch()
          local y = (row - 1) * self.tileHeight
          local tile = self:getTile(column, row)
          if tile == nil then
-            error('nil tile at column ' .. column .. ', row ' .. row)
+            error("nil tile at column " .. column .. ", row " .. row)
          elseif tile == TILE_GROUND then
             local hasLeft = self:getTile(column - 1, row) == TILE_GROUND
             local hasRight = self:getTile(column + 1, row) == TILE_GROUND
