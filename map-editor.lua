@@ -56,11 +56,13 @@ function MapEditor:create(spritesheetName)
    }
    setmetatable(this, self)
 
-   this.tileControls:onMouseDown(function(column, row, button)
+   this.tileControls:onMouseDown(function(points, button)
       local tileToCreate = (button == LEFT_MOUSE_BUTTON) and TILE_GROUND or TILE_EMPTY
-      if this:getTile(column, row) ~= tileToCreate then
-         this:setTile(column, row, tileToCreate)
-         this:recreateSpriteBatch()
+      for _, point in pairs(points) do
+         if this:getTile(point.x, point.y) ~= tileToCreate then
+            this:setTile(point.x, point.y, tileToCreate)
+            this:recreateSpriteBatch()
+         end
       end
    end)
 
