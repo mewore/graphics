@@ -71,7 +71,7 @@ function MapEditor:create(spritesheetDirectory)
       local imageData = love.image.newImageData(fileData)
       return love.graphics.newImage(imageData)
    end)
-local navigator = Navigator:create()
+   local navigator = Navigator:create()
 
    local this = {
       spritesheets = spritesheets,
@@ -111,7 +111,7 @@ local navigator = Navigator:create()
    math.randomseed(1)
    for row = 1, this.mapHeight do
       for column = 1, this.mapWidth do
-         this:setTile(column, row, (math.random() > 0.3) and TILE_EMPTY or TILE_GROUND)
+         this:setTile(column, row, math.floor(math.random(0, #spritesheets)))
          if this:getTile(column, row) == nil then
             print("BAD at:", column, row)
          end
