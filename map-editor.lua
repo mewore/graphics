@@ -43,6 +43,14 @@ local function generateQuads(spritesheet, tileWidth, tileHeight)
    return quads
 end
 
+local function map(array, functionToApply)
+   local newArray = {}
+   for index, value in ipairs(array) do
+      newArray[index] = functionToApply(value)
+   end
+   return newArray
+end
+
 local TILE_EMPTY = 0
 local TILE_GROUND = 1
 local TILE_GROUND_CORNER_TOP_LEFT = getTileIndex(5, 1)
@@ -53,18 +61,31 @@ local TILE_GROUND_CORNER_BOTTOM_LEFT = getTileIndex(5, 4)
 local LEFT_MOUSE_BUTTON = 1
 
 --- Displays a map and allows the user to edit it
--- @param spritesheetName {string} - The name (minus the extension) of the spritesheet to use for the tiles
-function MapEditor:create(spritesheetName)
-   local spritesheet = love.graphics.newImage(spritesheetName .. ".png")
+-- @param spritesheetDirectory {string} - The path to the directroy that contains all of the spritesheets
+function MapEditor:create(spritesheetDirectory)
+   local allSpritesheetFilenames = NativeFile:create(spritesheetDirectory):getFiles("png")
+   local spritesheets = map(allSpritesheetFilenames, function(name)
+      local file = NativeFile:create(spritesheetDirectory .. "/" .. name)
+      print(file:read())
+      local fileData = love.filesystem.newFileData(file:read(), name)
+      print("Extension: " .. fileData:getExtension())
+      print("Contents size: " .. fileData:getSize())
+      local imageData = love.image.newImageData(fileData)
+      return love.graphics.newImage(imageData)
+   end)
+   print("Filenames: " .. table.concat(allSpritesheetFilenames, ", "))
+   print("Spritesheet count: " .. #spritesheets)
 
    local this = {
-      spritesheet = spritesheet,
+      spritesheets = spritesheets,
       tileWidth = 32,
       tileHeight = 32,
       mapWidth = MAP_WIDTH,
       mapHeight = MAP_HEIGHT,
-      spriteBatch = love.graphics.newSpriteBatch(spritesheet, MAP_WIDTH * MAP_HEIGHT),
+      spriteBatches = nil,
       tiles = {},
+      tileSheetIndices = {},
+      tileSprites = nil,
       playerSpawnX = -1,
       playerSpawnY = -1,
       tileControls = TileControls:create({ r = 1, g = 0, b = 0 }, 32, 32),
@@ -72,16 +93,24 @@ function MapEditor:create(spritesheetName)
    setmetatable(this, self)
 
    this.tileControls:onMouseDown(function(points, button)
-      local tileToCreate = (button == LEFT_MOUSE_BUTTON) and TILE_GROUND or TILE_EMPTY
+      local tileToCreate = (button == LEFT_MOUSE_BUTTON)
+            and (love.keyboard.isDown('1') and TILE_GROUND or TILE_GROUND + 1)
+            or TILE_EMPTY
+      local shouldRecreate = false
       for _, point in pairs(points) do
          if this:getTile(point.x, point.y) ~= tileToCreate then
             this:setTile(point.x, point.y, tileToCreate)
-            this:recreateSpriteBatch()
+            shouldRecreate = true
          end
+      end
+      if shouldRecreate then
+         this:recreateSpriteBatch()
       end
    end)
 
-   this.tileSprites = generateQuads(spritesheet, 32, 32)
+   this.tileSprites = map(spritesheets, function(spritesheet) return generateQuads(spritesheet, 32, 32) end)
+   print(#spritesheets)
+   print(#this.tileSprites)
 
    math.randomseed(1)
    for row = 1, this.mapHeight do
@@ -136,7 +165,9 @@ end
 --- Updates the sprite batch with sprites corresponding to the current tiles.
 -- NOTE: A sprite batch is used for efficient rendering.
 function MapEditor:recreateSpriteBatch()
-   self.spriteBatch = love.graphics.newSpriteBatch(self.spritesheet, self.mapWidth * self.mapHeight)
+   self.spriteBatches = map(self.spritesheets, function(spritesheet)
+      return love.graphics.newSpriteBatch(spritesheet, self.mapWidth * self.mapHeight)
+   end)
    for row = 1, self.mapHeight do
       for column = 1, self.mapWidth do
          local x = (column - 1) * self.tileWidth
@@ -144,34 +175,35 @@ function MapEditor:recreateSpriteBatch()
          local tile = self:getTile(column, row)
          if tile == nil then
             error("nil tile at column " .. column .. ", row " .. row)
-         elseif tile == TILE_GROUND then
-            local hasLeft = self:getTile(column - 1, row) == TILE_GROUND
-            local hasRight = self:getTile(column + 1, row) == TILE_GROUND
-            local hasUp = self:getTile(column, row - 1) == TILE_GROUND
-            local hasDown = self:getTile(column, row + 1) == TILE_GROUND
-            local sprite = self.tileSprites[1 +
+         elseif not (tile == TILE_EMPTY) then
+            if tile > #self.tileSprites then
+               error("Tile '" .. tile .. "' is not valid. There are only " .. #self.tileSprites .. " tile types.")
+            end
+            local hasLeft = self:getTile(column - 1, row) == tile
+            local hasRight = self:getTile(column + 1, row) == tile
+            local hasUp = self:getTile(column, row - 1) == tile
+            local hasDown = self:getTile(column, row + 1) == tile
+            local sprite = self.tileSprites[tile][1 +
                   ((hasUp and 1 or 0) * 2 + (hasDown and 1 or 0)) * 4 +
                   ((hasLeft and 1 or 0) * 2 + (hasRight and 1 or 0))]
 
-            self.spriteBatch:add(sprite, x, y)
+            self.spriteBatches[tile]:add(sprite, x, y)
 
-            if not (self:getTile(column - 1, row - 1) == TILE_GROUND) and hasUp and hasLeft then
-               self.spriteBatch:add(self.tileSprites[TILE_GROUND_CORNER_TOP_LEFT], x, y)
+            if not (self:getTile(column - 1, row - 1) == tile) and hasUp and hasLeft then
+               self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_TOP_LEFT], x, y)
             end
 
-            if not (self:getTile(column + 1, row - 1) == TILE_GROUND) and hasUp and hasRight then
-               self.spriteBatch:add(self.tileSprites[TILE_GROUND_CORNER_TOP_RIGHT], x, y)
+            if not (self:getTile(column + 1, row - 1) == tile) and hasUp and hasRight then
+               self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_TOP_RIGHT], x, y)
             end
 
-            if not (self:getTile(column - 1, row + 1) == TILE_GROUND) and hasDown and hasLeft then
-               self.spriteBatch:add(self.tileSprites[TILE_GROUND_CORNER_BOTTOM_LEFT], x, y)
+            if not (self:getTile(column - 1, row + 1) == tile) and hasDown and hasLeft then
+               self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_BOTTOM_LEFT], x, y)
             end
 
-            if not (self:getTile(column + 1, row + 1) == TILE_GROUND) and hasDown and hasRight then
-               self.spriteBatch:add(self.tileSprites[TILE_GROUND_CORNER_BOTTOM_RIGHT], x, y)
+            if not (self:getTile(column + 1, row + 1) == tile) and hasDown and hasRight then
+               self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_BOTTOM_RIGHT], x, y)
             end
-         elseif not (tile == TILE_EMPTY) then
-            self.spriteBatch:add(self.tileSprites[tile], x, y)
          end
       end
    end
@@ -179,6 +211,8 @@ end
 
 --- LOVE draw callback
 function MapEditor:draw()
-   love.graphics.draw(self.spriteBatch)
+   for _, spriteBatch in ipairs(self.spriteBatches) do
+      love.graphics.draw(spriteBatch)
+   end
    self.tileControls:draw()
 end

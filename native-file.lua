@@ -39,7 +39,7 @@ end
 -- On FAILURE, throws an error
 -- @returns {string} - The contents of the file
 function NativeFile:read()
-   local file = openFile(self.path, "r")
+   local file = openFile(self.path, "rb")
    local contents = file:read("*all")
    file:close()
    return contents
@@ -81,7 +81,7 @@ end
 function NativeFile:getFiles(extension)
    if love.system.getOS() ~= OS_WINDOWS then
       error("Listing the children of directories in OSs different than Windows is not supported yet")
-   elseif not self.isDirectory() then
+   elseif not self:isDirectory() then
       error("Cannot get the sub-files of a non-directory (" .. self.path .. ")")
    end
    local file = io.popen("dir \"" .. self.path .. "\" /b /a-d", "r")
@@ -98,7 +98,7 @@ end
 function NativeFile:getDirectories()
    if love.system.getOS() ~= OS_WINDOWS then
       error("Listing the children of directories in OSs different than Windows is not supported yet")
-   elseif not self.isDirectory() then
+   elseif not self:isDirectory() then
       error("Cannot get the sub-directories of a non-directory (" .. self.path .. ")")
    end
    local file = io.popen("dir \"" .. self.path .. "\" /b /ad", "r")

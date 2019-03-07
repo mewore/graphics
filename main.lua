@@ -1,6 +1,6 @@
 require "map-editor"
 
-local mapEditor = MapEditor:create("tiles")
+local mapEditor = MapEditor:create(love.filesystem.getWorkingDirectory() .. "/tilesheets")
 
 love.keyboard.keysPressed = {}
 love.keyboard.keysReleased = {}
