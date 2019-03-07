@@ -1,6 +1,10 @@
 NativeFile = {}
 NativeFile.__index = NativeFile
 
+local OS_WINDOWS = "Windows"
+local CHECK_ATTRIBUTES_FILE_NAME = "check-attributes.bat";
+local CHECK_ATTRIBUTES_FILE_LOCATION = love.filesystem.getSaveDirectory() .. "/" .. CHECK_ATTRIBUTES_FILE_NAME;
+
 --- Wrapper of the native (Lua) file operations to avoid using the limited love.filesystem
 --
 -- Mostly useful for writing in directories different than the save directory or reading from directories that are
@@ -25,7 +29,7 @@ end
 local function openFile(path, mode)
    local file, errorMessage, errorCode = io.open(path, mode)
    if file == nil then
-      error("Encountered error with code " .. errorCode .. " while opening file " .. file .. ": " .. errorMessage)
+      error("Encountered error with code " .. errorCode .. " while opening file " .. path .. ": " .. errorMessage)
    end
    return file
 end
@@ -49,4 +53,66 @@ function NativeFile:write(contents)
    local file = openFile(self.path, "w")
    file:write(contents)
    file:close()
+end
+
+--- Checks whether the path corresponds to a directory
+-- @returns {boolean}
+function NativeFile:isDirectory()
+   return self:getAttributes() == "d--------"
+end
+
+--- Gets the attributes of the file/directory
+-- @returns {boolean}
+function NativeFile:getAttributes()
+   if love.system.getOS() ~= OS_WINDOWS then
+      error("Checking whether paths correspond to directories in OSs different than Windows is not implemented")
+   end
+   local file = io.popen(CHECK_ATTRIBUTES_FILE_LOCATION .. " " .. self.path, "r")
+   -- There are two unnecessary lines
+   file:read("*l")
+   file:read("*l")
+   local output = file:read("*l")
+   file:close()
+   return output
+end
+
+--- Lists the files in this directory (assuming this NativeFile instance corresponds to a directory)
+-- @param extension {string} - The extension to filter the files by
+function NativeFile:getFiles(extension)
+   if love.system.getOS() ~= OS_WINDOWS then
+      error("Listing the children of directories in OSs different than Windows is not supported yet")
+   elseif not self.isDirectory() then
+      error("Cannot get the sub-files of a non-directory (" .. self.path .. ")")
+   end
+   local file = io.popen("dir \"" .. self.path .. "\" /b /a-d", "r")
+   local output = file:read("*a")
+   file:close()
+   local result = {}
+   for match in string.gmatch(output, (extension == nil) and "([^\n]+)\n" or ("([^\n]-%." .. extension .. ")\n")) do
+      result[#result + 1] = match
+   end
+   return result
+end
+
+--- Lists the directories in this directory (assuming this NativeFile instance corresponds to a directory)
+function NativeFile:getDirectories()
+   if love.system.getOS() ~= OS_WINDOWS then
+      error("Listing the children of directories in OSs different than Windows is not supported yet")
+   elseif not self.isDirectory() then
+      error("Cannot get the sub-directories of a non-directory (" .. self.path .. ")")
+   end
+   local file = io.popen("dir \"" .. self.path .. "\" /b /ad", "r")
+   local output = file:read("*a")
+   file:close()
+   local result = {}
+   for match in string.gmatch(output, "(..-)\n") do
+      result[#result + 1] = match
+   end
+   return result
+end
+
+-- Batch file necessary for checking attributes... ugh -.-
+local success, message = love.filesystem.write(CHECK_ATTRIBUTES_FILE_NAME, "echo %~a1")
+if not success then
+   error("Failed to create file " .. CHECK_ATTRIBUTES_FILE_NAME .. " due to: " .. message)
 end
