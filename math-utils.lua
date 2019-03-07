@@ -9,7 +9,8 @@ function MathUtils:create()
    return this
 end
 
---- Get the path from (fromX, fromY) to (toX, toY) that would result in a line.
+--- Get the path from (fromX, fromY) to (toX, toY) that would result in a line. The path includes BOTH the starting
+-- point and the ending point.
 -- @param fromX {int} - The X coordinate of the first point
 -- @param fromY {int} - The Y coordinate of the first point
 -- @param toX {int} - The X coordinate of the second point

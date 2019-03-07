@@ -85,24 +85,27 @@ function MapEditor:create(spritesheetDirectory)
       tileSprites = nil,
       playerSpawnX = -1,
       playerSpawnY = -1,
-      tileControls = TileControls:create({ r = 1, g = 0, b = 0 }, 32, 32, navigator),
-      navigator = navigator
+      tileControls = TileControls:create({ r = 1, g = 0, b = 0 }, 32, 32, MAP_WIDTH, MAP_HEIGHT, navigator),
+      navigator = navigator,
+      shouldRecreate = false,
    }
    setmetatable(this, self)
 
-   this.tileControls:onMouseDown(function(points, button)
+   this.tileControls:onDrawProgress(function(points, button)
       local tileToCreate = (button == LEFT_MOUSE_BUTTON)
             and (love.keyboard.isDown('1') and TILE_GROUND or TILE_GROUND + 1)
             or TILE_EMPTY
-      local shouldRecreate = false
       for _, point in pairs(points) do
          if this:getTile(point.x, point.y) ~= tileToCreate then
             this:setTile(point.x, point.y, tileToCreate)
-            shouldRecreate = true
+            this.shouldRecreate = true
          end
       end
-      if shouldRecreate then
+   end)
+   this.tileControls:onDrawDone(function()
+      if this.shouldRecreate then
          this:recreateSpriteBatch()
+         this.shouldRecreate = false
       end
    end)
 
@@ -139,6 +142,11 @@ function MapEditor:update(dt)
          self.mapHeight = data.mapHeight
          self.tiles = data.tiles
          self:recreateSpriteBatch()
+      end
+      if love.mouse.wheel.dy ~= 0 then
+         local sign = love.mouse.wheel.dy > 0 and 1 or -1
+         local delta = -math.floor(math.abs(love.mouse.wheel.dy) * (self.tileControls.size * 0.1 + 1)) * sign
+         self.tileControls.size = math.max(self.tileControls.size + delta, 1)
       end
    end
 
