@@ -66,15 +66,10 @@ function MapEditor:create(spritesheetDirectory)
    local allSpritesheetFilenames = NativeFile:create(spritesheetDirectory):getFiles("png")
    local spritesheets = map(allSpritesheetFilenames, function(name)
       local file = NativeFile:create(spritesheetDirectory .. "/" .. name)
-      print(file:read())
       local fileData = love.filesystem.newFileData(file:read(), name)
-      print("Extension: " .. fileData:getExtension())
-      print("Contents size: " .. fileData:getSize())
       local imageData = love.image.newImageData(fileData)
       return love.graphics.newImage(imageData)
    end)
-   print("Filenames: " .. table.concat(allSpritesheetFilenames, ", "))
-   print("Spritesheet count: " .. #spritesheets)
 
    local this = {
       spritesheets = spritesheets,
@@ -109,8 +104,6 @@ function MapEditor:create(spritesheetDirectory)
    end)
 
    this.tileSprites = map(spritesheets, function(spritesheet) return generateQuads(spritesheet, 32, 32) end)
-   print(#spritesheets)
-   print(#this.tileSprites)
 
    math.randomseed(1)
    for row = 1, this.mapHeight do

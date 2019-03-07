@@ -94,7 +94,6 @@ end
 -- @param filename {string} - The file to load the map from
 -- @returns {table} - The decoded data
 function MapEncoder:loadFromFile(filename)
-   print("Loading from " .. filename)
    local file = NativeFile:create(filename)
    local encoded = file:read(filename)
    local data = decode(encoded)
