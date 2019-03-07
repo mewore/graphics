@@ -217,11 +217,21 @@ end
 
 --- LOVE draw callback
 function MapEditor:draw()
+   -- Gray border
+   local BORDER_VALUE = 0.7
+   love.graphics.clear(BORDER_VALUE, BORDER_VALUE, BORDER_VALUE)
+
    love.graphics.push()
    self.navigator:scaleAndTranslate()
+
+   -- White background
+   love.graphics.rectangle("fill", 0, 0, self.mapWidth * self.tileWidth, self.mapHeight * self.tileHeight)
+   -- The map itself
    for _, spriteBatch in ipairs(self.spriteBatches) do
       love.graphics.draw(spriteBatch)
    end
+   -- The tile cursor
    self.tileControls:draw()
+
    love.graphics.pop()
 end
