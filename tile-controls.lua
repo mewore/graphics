@@ -9,7 +9,7 @@ local mathUtils = MathUtils:create()
 -- @param colour {r: number, g: number, b: number} - The colour of the tile the user has hovered over
 -- @param tileWidth {number} - The width of each tile, in pixels
 -- @param tileHeight {number} - The height of each tile, in pixels
-function TileControls:create(colour, tileWidth, tileHeight)
+function TileControls:create(colour, tileWidth, tileHeight, navigator)
    local this = {
       colour = colour,
       tileWidth = tileWidth,
@@ -19,6 +19,7 @@ function TileControls:create(colour, tileWidth, tileHeight)
       hoveredRow = 0,
       lastMouseDownPosition = nil,
       mouseIsDown = false,
+      navigator = navigator,
    }
    setmetatable(this, self)
 
@@ -33,8 +34,9 @@ end
 
 --- LOVE update callback
 function TileControls:update()
-   self.hoveredColumn = math.floor(love.mouse.getX() / self.tileWidth) + 1
-   self.hoveredRow = math.floor(love.mouse.getY() / self.tileHeight) + 1
+   local mouseAbsoluteX, mouseAbsoluteY = self.navigator:screenToAbsolute(love.mouse.getX(), love.mouse.getY())
+   self.hoveredColumn = math.floor(mouseAbsoluteX / self.tileWidth) + 1
+   self.hoveredRow = math.floor(mouseAbsoluteY / self.tileHeight) + 1
 
    local mouseIsDown = false
    for mouseButton = 1, 2 do

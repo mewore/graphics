@@ -46,7 +46,6 @@ end
 -- @param filename {string}
 -- @param map {table}
 function MapEncoder:saveToFile(filename, map)
-   print("Saving to " .. filename)
    local encoded = encode({
       tileWidth = map.tileWidth,
       tileHeight = map.tileHeight,

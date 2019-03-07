@@ -1,5 +1,6 @@
 require "tile-controls"
 require "map-encoder"
+require "navigator"
 
 MapEditor = {}
 MapEditor.__index = MapEditor
@@ -70,6 +71,7 @@ function MapEditor:create(spritesheetDirectory)
       local imageData = love.image.newImageData(fileData)
       return love.graphics.newImage(imageData)
    end)
+local navigator = Navigator:create()
 
    local this = {
       spritesheets = spritesheets,
@@ -83,7 +85,8 @@ function MapEditor:create(spritesheetDirectory)
       tileSprites = nil,
       playerSpawnX = -1,
       playerSpawnY = -1,
-      tileControls = TileControls:create({ r = 1, g = 0, b = 0 }, 32, 32),
+      tileControls = TileControls:create({ r = 1, g = 0, b = 0 }, 32, 32, navigator),
+      navigator = navigator
    }
    setmetatable(this, self)
 
@@ -121,18 +124,25 @@ function MapEditor:create(spritesheetDirectory)
 end
 
 --- LOVE update callback
-function MapEditor:update()
-   if love.keyboard.keysPressed[SAVE_BUTTON] then
-      mapEncoder:saveToFile(MAP_SAVE_FILE_NAME, self)
-   elseif love.keyboard.keysPressed[LOAD_BUTTON] then
-      local data = mapEncoder:loadFromFile(MAP_SAVE_FILE_NAME)
-      self.tileWidth = data.tileWidth
-      self.tileHeight = data.tileHeight
-      self.mapWidth = data.mapWidth
-      self.mapHeight = data.mapHeight
-      self.tiles = data.tiles
-      self:recreateSpriteBatch()
+-- @param dt {float} - The amount of time (in seconds) since the last update
+function MapEditor:update(dt)
+   if love.keyboard.controlIsDown or love.keyboard.commandIsDown then
+      if love.keyboard.keysPressed[SAVE_BUTTON] then
+         print("Saving to file: ", MAP_SAVE_FILE_NAME)
+         mapEncoder:saveToFile(MAP_SAVE_FILE_NAME, self)
+      elseif love.keyboard.keysPressed[LOAD_BUTTON] then
+         print("Loading from file: ", MAP_SAVE_FILE_NAME)
+         local data = mapEncoder:loadFromFile(MAP_SAVE_FILE_NAME)
+         self.tileWidth = data.tileWidth
+         self.tileHeight = data.tileHeight
+         self.mapWidth = data.mapWidth
+         self.mapHeight = data.mapHeight
+         self.tiles = data.tiles
+         self:recreateSpriteBatch()
+      end
    end
+
+   self.navigator:update(dt)
    self.tileControls:update()
 end
 
@@ -152,6 +162,9 @@ end
 -- @param row {int} - The row of the cell
 -- @param tile {int} - The ID/index of the new tile
 function MapEditor:setTile(column, row, tile)
+   if column <= 0 or row <= 0 or column > self.mapWidth or row > self.mapHeight then
+      return
+   end
    self.tiles[(row - 1) * self.mapWidth + column] = tile
 end
 
@@ -204,8 +217,11 @@ end
 
 --- LOVE draw callback
 function MapEditor:draw()
+   love.graphics.push()
+   self.navigator:scaleAndTranslate()
    for _, spriteBatch in ipairs(self.spriteBatches) do
       love.graphics.draw(spriteBatch)
    end
    self.tileControls:draw()
+   love.graphics.pop()
 end

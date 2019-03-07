@@ -4,6 +4,7 @@ local mapEditor = MapEditor:create(love.filesystem.getWorkingDirectory() .. "/ti
 
 love.keyboard.keysPressed = {}
 love.keyboard.keysReleased = {}
+love.mouse.wheel = { dx = 0, dy = 0 }
 
 --- LOVE load callback
 function love.load()
@@ -27,11 +28,25 @@ function love.keyreleased(key)
    love.keyboard.keysReleased[key] = true
 end
 
+--- LOVE mouse wheel scroll callback
+-- @param dx {int} - The horizontal movement of the wheel scroll
+-- @param dy {int} - The vertical movement of the wheel scroll (positive ~ forwards, negative ~ backwards)
+function love.wheelmoved(dx, dy)
+   love.mouse.wheel.dx, love.mouse.wheel.dy = love.mouse.wheel.dx + dx, love.mouse.wheel.dy + dy
+end
+
 --- LOVE update callback
-function love.update()
-   mapEditor:update()
+-- @param dt {float} - The amount of time (in seconds) since the last update
+function love.update(dt)
+   love.keyboard.controlIsDown = love.keyboard.isDown("rctrl") or love.keyboard.isDown("lctrl")
+   love.keyboard.shiftIsDown = love.keyboard.isDown("rshift") or love.keyboard.isDown("lshift")
+   love.keyboard.altIsDown = love.keyboard.isDown("ralt") or love.keyboard.isDown("lalt")
+   love.keyboard.commandIsDown = love.keyboard.isDown("rgui") or love.keyboard.isDown("lgui")
+
+   mapEditor:update(dt)
    love.keyboard.keysPressed = {}
    love.keyboard.keysReleased = {}
+   love.mouse.wheel.dx, love.mouse.wheel.dy = 0, 0
 end
 
 --- LOVE draw callback
