@@ -15,14 +15,21 @@ local MOVEMENT_KEYMAP = {
 }
 local MOUSE_SCROLL_PAN_MULTIPLIER = 25
 
+local INITIAL_ZOOM_MULTIPLIER = 0.95
+
 --- A controller that keeps track of an X and Y offset as well as a zoom ratio
-function Navigator:create()
+function Navigator:create(canvasWidth, canvasHeight)
+   local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
+   local zoom = math.min(screenWidth / canvasWidth, screenHeight / canvasHeight) * INITIAL_ZOOM_MULTIPLIER
    local this = {
       x = 0,
       y = 0,
-      zoom = 1,
+      zoom = zoom,
    }
    setmetatable(this, self)
+
+   local rightX, bottomY = this:screenToAbsolute(screenWidth, screenHeight)
+   this.x, this.y = -math.floor((rightX - canvasWidth) / 2), -math.floor((bottomY - canvasHeight) / 2)
 
    return this
 end

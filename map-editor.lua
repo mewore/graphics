@@ -96,7 +96,7 @@ function MapEditor:create(spritesheetDirectoryPath)
       local imageData = love.image.newImageData(fileData)
       return love.graphics.newImage(imageData)
    end)
-   local navigator = Navigator:create()
+   local navigator = Navigator:create(MAP_WIDTH * tileWidth, MAP_HEIGHT, tileHeight)
 
    local tileNames = map(allTilesheetFiles, function(file) return file.name end)
 

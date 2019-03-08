@@ -21,13 +21,13 @@ function ImageEditor:create(filename)
    local file = NativeFile:create(filename)
    local fileData = love.filesystem.newFileData(file:read(), filename)
    local imageData = love.image.newImageData(fileData)
-   local navigator = Navigator:create()
    local width = imageData:getWidth()
    local height = imageData:getHeight()
 
    local mainColour = {r = 0, g = 0, b = 0, a = 1}
    local secondaryColour = {r = 0, g = 0, b = 0, a = 1 }
 
+   local navigator = Navigator:create(width * TILE_WIDTH, height * TILE_HEIGHT)
    local this = {
       filename = filename,
       imageData = imageData,
