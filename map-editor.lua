@@ -159,6 +159,7 @@ function MapEditor:create(spritesheetDirectoryPath)
       if points and #points >= 1 then
          local tile = this:getTile(points[1].x, points[1].y)
          if tile ~= TILE_EMPTY then
+            this.imageEditMode = false
             this.imageEditor = ImageEditor:create(allTilesheetFiles[tile].path)
             this.imageEditor.onClose = function() this.imageEditor = nil end
          end
