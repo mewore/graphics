@@ -1,6 +1,7 @@
 require "tile-controls"
 require "map-encoder"
 require "navigator"
+require "image-editor"
 
 MapEditor = {}
 MapEditor.__index = MapEditor
@@ -10,6 +11,7 @@ local MAP_HEIGHT = 32
 
 local COLUMN_COUNT = 4
 
+local EDIT_BUTTON = "e"
 local SAVE_BUTTON = "s"
 local LOAD_BUTTON = "l"
 local MAP_SAVE_FILE_NAME = love.filesystem.getWorkingDirectory() .. "/maps/test.map"
@@ -74,6 +76,7 @@ function MapEditor:create(spritesheetDirectory)
    local navigator = Navigator:create()
 
    local this = {
+      directory = spritesheetDirectory,
       spritesheets = spritesheets,
       tileWidth = 32,
       tileHeight = 32,
@@ -85,13 +88,16 @@ function MapEditor:create(spritesheetDirectory)
       tileSprites = nil,
       playerSpawnX = -1,
       playerSpawnY = -1,
-      tileControls = TileControls:create({ r = 1, g = 0, b = 0 }, 32, 32, MAP_WIDTH, MAP_HEIGHT, navigator),
+      editMapTileControls = TileControls:create({ r = 1, g = 0, b = 0 }, 32, 32, MAP_WIDTH, MAP_HEIGHT, navigator, false),
+      editImageTileControls = TileControls:create({ r = 0.2, g = 1, b = 0 }, 32, 32, MAP_WIDTH, MAP_HEIGHT, navigator, true),
       navigator = navigator,
       shouldRecreate = false,
+      imageEditMode = false,
+      imageEditor = nil,
    }
    setmetatable(this, self)
 
-   this.tileControls:onDrawProgress(function(points, button)
+   this.editMapTileControls:onDrawProgress(function(points, button)
       local tileToCreate = (button == LEFT_MOUSE_BUTTON)
             and (love.keyboard.isDown('1') and TILE_GROUND or TILE_GROUND + 1)
             or TILE_EMPTY
@@ -102,10 +108,20 @@ function MapEditor:create(spritesheetDirectory)
          end
       end
    end)
-   this.tileControls:onDrawDone(function()
+   this.editMapTileControls:onDrawDone(function()
       if this.shouldRecreate then
          this:recreateSpriteBatch()
          this.shouldRecreate = false
+      end
+   end)
+
+   this.editImageTileControls:onDrawProgress(function(points)
+      print("image tile controls activated")
+      if points and #points >= 1 then
+         local tile = this:getTile(points[1].x, points[1].y)
+         if tile ~= TILE_EMPTY then
+            this.imageEditor = ImageEditor:create(this.directory .. "/" .. allSpritesheetFilenames[tile])
+         end
       end
    end)
 
@@ -129,6 +145,11 @@ end
 --- LOVE update callback
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function MapEditor:update(dt)
+   if self.imageEditor then
+      self.imageEditor:update(dt)
+      return
+   end
+
    if love.keyboard.controlIsDown or love.keyboard.commandIsDown then
       if love.keyboard.keysPressed[SAVE_BUTTON] then
          print("Saving to file: ", MAP_SAVE_FILE_NAME)
@@ -143,15 +164,21 @@ function MapEditor:update(dt)
          self.tiles = data.tiles
          self:recreateSpriteBatch()
       end
-      if love.mouse.wheel.dy ~= 0 then
-         local sign = love.mouse.wheel.dy > 0 and 1 or -1
-         local delta = -math.floor(math.abs(love.mouse.wheel.dy) * (self.tileControls.size * 0.1 + 1)) * sign
-         self.tileControls.size = math.max(self.tileControls.size + delta, 1)
+      if not self.imageEditMode then
+         self.editMapTileControls:zoom(love.mouse.wheel.dy)
       end
    end
 
+   if love.keyboard.keysPressed[EDIT_BUTTON] then
+      self.imageEditMode = not self.imageEditMode
+   end
+
    self.navigator:update(dt)
-   self.tileControls:update()
+   if self.imageEditMode then
+      self.editImageTileControls:update()
+   else
+      self.editMapTileControls:update()
+   end
 end
 
 --- Gets the tile from a specified cell
@@ -225,6 +252,11 @@ end
 
 --- LOVE draw callback
 function MapEditor:draw()
+   if self.imageEditor then
+      self.imageEditor:draw()
+      return
+   end
+
    -- Gray border
    local BORDER_VALUE = 0.7
    love.graphics.clear(BORDER_VALUE, BORDER_VALUE, BORDER_VALUE)
@@ -239,7 +271,11 @@ function MapEditor:draw()
       love.graphics.draw(spriteBatch)
    end
    -- The tile cursor
-   self.tileControls:draw()
+   if self.imageEditMode then
+      self.editImageTileControls:draw()
+   else
+      self.editMapTileControls:draw()
+   end
 
    love.graphics.pop()
 end

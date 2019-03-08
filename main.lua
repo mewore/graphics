@@ -4,6 +4,7 @@ local mapEditor = MapEditor:create(love.filesystem.getWorkingDirectory() .. "/ti
 
 love.keyboard.keysPressed = {}
 love.keyboard.keysReleased = {}
+love.mouse.buttonsPressed = {}
 love.mouse.wheel = { dx = 0, dy = 0 }
 
 --- LOVE load callback
@@ -35,6 +36,18 @@ function love.wheelmoved(dx, dy)
    love.mouse.wheel.dx, love.mouse.wheel.dy = love.mouse.wheel.dx + dx, love.mouse.wheel.dy + dy
 end
 
+--- LOVE mouse click callback
+-- @param x {int} - Mouse x position, in pixels
+-- @param y {int} - Mouse y position, in pixels
+-- @param button {int} - The button index that was pressed. 1 is the primary mouse button,
+-- 2 is the secondary mouse button and 3 is the middle button. Further buttons are mouse dependent
+-- @param isTouch {boolean} - True if the mouse button press originated from a touchscreen touch-press
+-- @param presses {int} - The number of presses in a short time frame and small area, used to simulate double, triple
+-- clicks
+function love.mousepressed(x, y, button, isTouch, presses)
+   love.mouse.buttonsPressed[button] = { x = x, y = y, isTouch = isTouch, presses = presses }
+end
+
 --- LOVE update callback
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function love.update(dt)
@@ -46,6 +59,7 @@ function love.update(dt)
    mapEditor:update(dt)
    love.keyboard.keysPressed = {}
    love.keyboard.keysReleased = {}
+   love.mouse.buttonsPressed = {}
    love.mouse.wheel.dx, love.mouse.wheel.dy = 0, 0
 end
 

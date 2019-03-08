@@ -6,23 +6,29 @@ TileControls.__index = TileControls
 local mathUtils = MathUtils:create()
 
 --- Tile controls allow the user to provide tile-based input (i.e. clicking in a grid). Basically a pencil.
--- @param colour {r: number, g: number, b: number} - The colour of the tile the user has hovered over
--- @param tileWidth {number} - The width of each tile, in pixels
--- @param tileHeight {number} - The height of each tile, in pixels
-function TileControls:create(colour, tileWidth, tileHeight, canvasWidth, canvasHeight, navigator)
+-- @param colour {r: float, g: float, b: float} - The colour of the tile the user has hovered over
+-- @param tileWidth {int} - The width of each column/tile, in pixels
+-- @param tileHeight {int} - The height of each row/tile, in pixels
+-- @param canvasWidth {int} - The total number of columns
+-- @param canvasHeight {int} - The total number of rows
+-- @param navigator {Navigator} - The navigator used for whatever is being edited with the tile controls
+-- @param singular {boolean} - Whether the controls are meant only for single selection instead of drawing.
+function TileControls:create(colour, tileWidth, tileHeight, canvasWidth, canvasHeight, navigator, singular)
    local this = {
       colour = colour,
       tileWidth = tileWidth,
       tileHeight = tileHeight,
       canvasWidth = canvasWidth,
       canvasHeight = canvasHeight,
-      drawProgressCallback = nil,
-      drawDoneCallback = nil,
+      drawProgressCallback = function() end,
+      drawDoneCallback = function() end,
       leftHoveredColumn = 0,
       topHoveredRow = 0,
       lastMouseDownPosition = nil,
       navigator = navigator,
       size = 1,
+      singular = singular,
+      lackOfMouseActivityDetected = false,
    }
    setmetatable(this, self)
 
@@ -39,6 +45,14 @@ end
 -- @param callback {function}
 function TileControls:onDrawDone(callback)
    self.drawDoneCallback = callback
+end
+
+function TileControls:zoom(mouseScrollDy)
+   if mouseScrollDy ~= 0 then
+      local sign = love.mouse.wheel.dy > 0 and 1 or -1
+      local delta = -math.floor(math.abs(love.mouse.wheel.dy) * (self.size * 0.1 + 1)) * sign
+      self.size = math.max(self.size + delta, 1)
+   end
 end
 
 --- The number of cells that is omitted on the left side of each row of the circle from top to bottom (the same number
@@ -180,6 +194,13 @@ end
 
 --- LOVE update callback
 function TileControls:update()
+   -- If a canvas that uses a tile control is opened with a click, the tile control would be initiated from the start,
+   -- which is not user-friendly at all.
+   self.lackOfMouseActivityDetected = self.lackOfMouseActivityDetected or not love.mouse.isDown(1, 2)
+   if not self.lackOfMouseActivityDetected then
+      return
+   end
+
    local mouseAbsoluteX, mouseAbsoluteY = self.navigator:screenToAbsolute(love.mouse.getX(), love.mouse.getY())
    local offset = (self.size - 1) / 2
    self.leftHoveredColumn = math.floor(mouseAbsoluteX / self.tileWidth - offset) + 1
@@ -187,7 +208,12 @@ function TileControls:update()
 
    local mouseIsDown = false
    for mouseButton = 1, 2 do
-      if self.drawProgressCallback ~= nil and love.mouse.isDown(mouseButton) then
+      if self.singular then
+         if love.mouse.buttonsPressed[mouseButton] then
+            self.drawProgressCallback(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
+               self.canvasWidth, self.canvasHeight), mouseButton)
+         end
+      elseif love.mouse.isDown(mouseButton) then
          if self.lastMouseDownPosition == nil then
             self.drawProgressCallback(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
                self.canvasWidth, self.canvasHeight), mouseButton)

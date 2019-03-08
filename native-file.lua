@@ -50,7 +50,7 @@ end
 -- On FAILURE, throws an error
 -- @param contents {string} - What to write into the file
 function NativeFile:write(contents)
-   local file = openFile(self.path, "w")
+   local file = openFile(self.path, "wb")
    file:write(contents)
    file:close()
 end
