@@ -105,8 +105,6 @@ function MapEditor:create(spritesheetDirectoryPath)
       end),
       tiles = {},
       tileSprites = nil,
-      playerSpawnX = -1,
-      playerSpawnY = -1,
       editMapTileControls = TileControls:create({ r = 1, g = 0, b = 0 }, tileWidth, tileHeight,
          MAP_WIDTH, MAP_HEIGHT, navigator, false),
       editImageTileControls = TileControls:create({ r = 0.2, g = 1, b = 0 }, tileWidth, tileHeight,
