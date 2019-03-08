@@ -16,7 +16,7 @@ local COLUMN_COUNT = 4
 local EDIT_BUTTON = "e"
 local SAVE_BUTTON = "s"
 local LOAD_BUTTON = "l"
-local MAP_SAVE_FILE_NAME = love.filesystem.getWorkingDirectory() .. "/maps/test.map"
+local MAP_SAVE_FILE_NAME = love.filesystem.getWorkingDirectory() .. "/maps/test"
 local mapEncoder = MapEncoder:create()
 
 --- Get the index of a tile if counting started at 1 and continued from left to right and top to bottom as text does.
@@ -212,8 +212,6 @@ function MapEditor:update(dt)
       elseif love.keyboard.keysPressed[LOAD_BUTTON] then
          print("Loading from file: ", MAP_SAVE_FILE_NAME)
          local data = mapEncoder:loadFromFile(MAP_SAVE_FILE_NAME)
-         self.tileWidth = data.tileWidth
-         self.tileHeight = data.tileHeight
          self.mapWidth = data.mapWidth
          self.mapHeight = data.mapHeight
          self.tiles = data.tiles

@@ -4,8 +4,6 @@ require "properties-encoder"
 MapEncoder = {}
 MapEncoder.__index = MapEncoder
 
-local TILE_BYTE_OFFSET = 65
-
 --- A map encoder handles the ENcoding and DEcoding of maps to/from files
 function MapEncoder:create()
    local this = {}
@@ -19,7 +17,7 @@ end
 local function encodeMapTiles(tiles)
    local tileArray = {}
    for index, value in ipairs(tiles) do
-      tileArray[index] = string.char(TILE_BYTE_OFFSET + value)
+      tileArray[index] = string.char(127 - value)
    end
    return table.concat(tileArray, "")
 end
@@ -28,15 +26,17 @@ end
 -- @param filename {string}
 -- @param map {table}
 function MapEncoder:saveToFile(filename, map)
-   local encoded = PropertiesEncoder:create():encode({
-      tileWidth = map.tileWidth,
-      tileHeight = map.tileHeight,
+   local mapData = encodeMapTiles(map.tiles, map.mapWidth, map.mapHeight)
+   local mapPropertiesData = PropertiesEncoder:create():encode({
       mapWidth = map.mapWidth,
       mapHeight = map.mapHeight,
-      tiles = encodeMapTiles(map.tiles, map.mapWidth, map.mapHeight),
    })
-   local file = NativeFile:create(filename)
-   file:write(encoded)
+
+   local mapFile = NativeFile:create(filename .. ".map")
+   local mapPropertiesFile = NativeFile:create(filename .. ".properties")
+
+   mapFile:write(mapData)
+   mapPropertiesFile:write(mapPropertiesData)
 end
 
 --- Decode a tile string into an array of tiles
@@ -46,7 +46,8 @@ local function decodeMapTiles(rawTiles)
    local tiles = {}
    local length = string.len(rawTiles)
    for index = 1, length do
-      tiles[index] = string.byte(rawTiles, index) - TILE_BYTE_OFFSET
+--      tiles[index] = string.byte(rawTiles, index) - TILE_BYTE_OFFSET
+      tiles[index] = 127 - string.byte(rawTiles, index)
    end
    return tiles
 end
@@ -55,9 +56,10 @@ end
 -- @param filename {string} - The file to load the map from
 -- @returns {table} - The decoded data
 function MapEncoder:loadFromFile(filename)
-   local file = NativeFile:create(filename)
-   local encoded = file:read(filename)
-   local data = PropertiesEncoder:create():decode(encoded)
-   data.tiles = decodeMapTiles(data.tiles)
-   return data
+   local mapFile = NativeFile:create(filename .. ".map")
+   local mapPropertiesFile = NativeFile:create(filename .. ".properties")
+
+   local result = PropertiesEncoder:create():decode(mapPropertiesFile:read())
+   result.tiles = decodeMapTiles(mapFile:read())
+   return result
 end
