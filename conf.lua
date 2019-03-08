@@ -8,9 +8,9 @@ function love.conf(t)
    -- Enable release mode (boolean)
    t.release = false
    -- The window width (number)
-   t.window.width = 800
+   t.window.width = 1280
    -- The window height (number)
-   t.window.height = 500
+   t.window.height = 720
    -- Remove all border visuals from the window (boolean)
    t.window.borderless = false
    -- Let the window be user-resizable (boolean)

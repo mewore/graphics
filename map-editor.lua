@@ -2,6 +2,8 @@ require "tile-controls"
 require "map-encoder"
 require "navigator"
 require "image-editor"
+require "draw-overlay"
+require "controls/paint-display"
 
 MapEditor = {}
 MapEditor.__index = MapEditor
@@ -55,7 +57,6 @@ local function map(array, functionToApply)
 end
 
 local TILE_EMPTY = 0
-local TILE_GROUND = 1
 local TILE_GROUND_CORNER_TOP_LEFT = getTileIndex(5, 1)
 local TILE_GROUND_CORNER_TOP_RIGHT = getTileIndex(5, 2)
 local TILE_GROUND_CORNER_BOTTOM_RIGHT = getTileIndex(5, 3)
@@ -74,6 +75,17 @@ function MapEditor:create(spritesheetDirectory)
       return love.graphics.newImage(imageData)
    end)
    local navigator = Navigator:create()
+
+   local paintDisplayPreviews = {}
+   local paintDisplay = PaintDisplay:create(#spritesheets >= 1 and 1 or 0, #spritesheets >= 2 and 2 or 0, function(x, y, tile)
+      if tile ~= TILE_EMPTY then
+         love.graphics.draw(spritesheets[tile], paintDisplayPreviews[tile], x, y)
+      end
+   end)
+   for i = 1 , #spritesheets do
+      paintDisplayPreviews[i] = love.graphics.newQuad(0, 0, paintDisplay.previewWidth, paintDisplay.previewHeight,
+         spritesheets[i]:getDimensions())
+   end
 
    local this = {
       directory = spritesheetDirectory,
@@ -94,13 +106,17 @@ function MapEditor:create(spritesheetDirectory)
       shouldRecreate = false,
       imageEditMode = false,
       imageEditor = nil,
+      drawOverlay = DrawOverlay:create({paintDisplay}),
+      tileControlsAreDisabled = false,
+      paintDisplay = paintDisplay,
+      onClose = function() end,
    }
    setmetatable(this, self)
 
    this.editMapTileControls:onDrawProgress(function(points, button)
       local tileToCreate = (button == LEFT_MOUSE_BUTTON)
-            and (love.keyboard.isDown('1') and TILE_GROUND or TILE_GROUND + 1)
-            or TILE_EMPTY
+            and paintDisplay.frontTile
+            or paintDisplay.backTile
       for _, point in pairs(points) do
          if this:getTile(point.x, point.y) ~= tileToCreate then
             this:setTile(point.x, point.y, tileToCreate)
@@ -121,6 +137,7 @@ function MapEditor:create(spritesheetDirectory)
          local tile = this:getTile(points[1].x, points[1].y)
          if tile ~= TILE_EMPTY then
             this.imageEditor = ImageEditor:create(this.directory .. "/" .. allSpritesheetFilenames[tile])
+            this.imageEditor.onClose = function() this.imageEditor = nil end
          end
       end
    end)
@@ -150,6 +167,22 @@ function MapEditor:update(dt)
       return
    end
 
+   if love.keyboard.escapeIsPressed then
+      self.onClose()
+   end
+
+   local activeControls = self.imageEditMode and self.editImageTileControls or self.editMapTileControls
+
+   if love.keyboard.keysPressed[EDIT_BUTTON] then
+      activeControls.drawingWith = nil
+
+      self.imageEditMode = not self.imageEditMode
+      activeControls = self.imageEditMode and self.editImageTileControls or self.editMapTileControls
+   end
+
+   self.tileControlsAreDisabled = self.drawOverlay:isHovered() and activeControls.drawingWith == nil
+   self.drawOverlay:update(dt)
+
    if love.keyboard.controlIsDown or love.keyboard.commandIsDown then
       if love.keyboard.keysPressed[SAVE_BUTTON] then
          print("Saving to file: ", MAP_SAVE_FILE_NAME)
@@ -164,20 +197,14 @@ function MapEditor:update(dt)
          self.tiles = data.tiles
          self:recreateSpriteBatch()
       end
-      if not self.imageEditMode then
+      if not self.tileControlsAreDisabled and not self.imageEditMode then
          self.editMapTileControls:zoom(love.mouse.wheel.dy)
       end
    end
 
-   if love.keyboard.keysPressed[EDIT_BUTTON] then
-      self.imageEditMode = not self.imageEditMode
-   end
-
    self.navigator:update(dt)
-   if self.imageEditMode then
-      self.editImageTileControls:update()
-   else
-      self.editMapTileControls:update()
+   if not self.tileControlsAreDisabled then
+      activeControls:update()
    end
 end
 
@@ -271,11 +298,12 @@ function MapEditor:draw()
       love.graphics.draw(spriteBatch)
    end
    -- The tile cursor
-   if self.imageEditMode then
-      self.editImageTileControls:draw()
-   else
-      self.editMapTileControls:draw()
+   if not self.tileControlsAreDisabled then
+      local activeControls = self.imageEditMode and self.editImageTileControls or self.editMapTileControls
+      activeControls:draw()
    end
 
    love.graphics.pop()
+   self.drawOverlay.isOpaque = self.tileControlsAreDisabled
+   self.drawOverlay:draw()
 end

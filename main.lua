@@ -1,6 +1,7 @@
 require "map-editor"
 
 local mapEditor = MapEditor:create(love.filesystem.getWorkingDirectory() .. "/tilesheets")
+mapEditor.onClose = function() love.event.quit() end
 
 love.keyboard.keysPressed = {}
 love.keyboard.keysReleased = {}
@@ -15,9 +16,6 @@ end
 --- LOVE key pressed callback
 -- @param key {string} - The pressed key
 function love.keypressed(key)
-   if key == "escape" then
-      love.event.quit()
-   end
    print("Pressed:", key)
    love.keyboard.keysPressed[key] = true
 end
@@ -55,6 +53,7 @@ function love.update(dt)
    love.keyboard.shiftIsDown = love.keyboard.isDown("rshift") or love.keyboard.isDown("lshift")
    love.keyboard.altIsDown = love.keyboard.isDown("ralt") or love.keyboard.isDown("lalt")
    love.keyboard.commandIsDown = love.keyboard.isDown("rgui") or love.keyboard.isDown("lgui")
+   love.keyboard.escapeIsPressed = love.keyboard.keysPressed["escape"]
 
    mapEditor:update(dt)
    love.keyboard.keysPressed = {}

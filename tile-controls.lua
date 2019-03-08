@@ -28,7 +28,7 @@ function TileControls:create(colour, tileWidth, tileHeight, canvasWidth, canvasH
       navigator = navigator,
       size = 1,
       singular = singular,
-      lackOfMouseActivityDetected = false,
+      drawingWith = nil,
    }
    setmetatable(this, self)
 
@@ -206,36 +206,47 @@ function TileControls:update()
    self.leftHoveredColumn = math.floor(mouseAbsoluteX / self.tileWidth - offset) + 1
    self.topHoveredRow = math.floor(mouseAbsoluteY / self.tileHeight - offset) + 1
 
-   local mouseIsDown = false
+   local drawingWith
    for mouseButton = 1, 2 do
-      if self.singular then
-         if love.mouse.buttonsPressed[mouseButton] then
+      if love.mouse.buttonsPressed[mouseButton] then
+         if self.singular then
             self.drawProgressCallback(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
                self.canvasWidth, self.canvasHeight), mouseButton)
+            return
          end
-      elseif love.mouse.isDown(mouseButton) then
-         if self.lastMouseDownPosition == nil then
-            self.drawProgressCallback(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
-               self.canvasWidth, self.canvasHeight), mouseButton)
-         elseif self.leftHoveredColumn ~= self.lastMouseDownPosition.x
-               or self.topHoveredRow ~= self.lastMouseDownPosition.y then
-            local drawPath = mathUtils:getDiscreteLine(self.lastMouseDownPosition.x, self.lastMouseDownPosition.y,
-               self.leftHoveredColumn, self.topHoveredRow)
-            callForEachPointInPath(function(points) self.drawProgressCallback(points, mouseButton) end,
-               self.lastMouseDownPosition.x, self.lastMouseDownPosition.y, self.size, drawPath,
-               self.canvasWidth, self.canvasHeight)
-         end
-
-         self.drawDoneCallback()
-         mouseIsDown = true
+         drawingWith = mouseButton
+         break
       end
    end
+   if drawingWith == nil and self.drawingWith ~= nil and love.mouse.isDown(self.drawingWith) then
+      drawingWith = self.drawingWith
+   end
 
-   if mouseIsDown then
-      self.lastMouseDownPosition = { x = self.leftHoveredColumn, y = self.topHoveredRow }
-   else
+   if drawingWith == nil then
+      self.lastMouseDownPosition = nil
+      self.drawingWith = nil
+      return
+   end
+
+   if drawingWith ~= self.drawingWith then
       self.lastMouseDownPosition = nil
    end
+   self.drawingWith = drawingWith
+
+   if self.lastMouseDownPosition == nil then
+      self.drawProgressCallback(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
+         self.canvasWidth, self.canvasHeight), drawingWith)
+   elseif self.leftHoveredColumn ~= self.lastMouseDownPosition.x
+         or self.topHoveredRow ~= self.lastMouseDownPosition.y then
+      local drawPath = mathUtils:getDiscreteLine(self.lastMouseDownPosition.x, self.lastMouseDownPosition.y,
+         self.leftHoveredColumn, self.topHoveredRow)
+      callForEachPointInPath(function(points) self.drawProgressCallback(points, drawingWith) end,
+         self.lastMouseDownPosition.x, self.lastMouseDownPosition.y, self.size, drawPath,
+         self.canvasWidth, self.canvasHeight)
+   end
+
+   self.drawDoneCallback()
+   self.lastMouseDownPosition = { x = self.leftHoveredColumn, y = self.topHoveredRow }
 end
 
 --- LOVE draw callback

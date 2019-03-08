@@ -61,6 +61,10 @@ end
 --- LOVE update callback
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function ImageEditor:update(dt)
+   if love.keyboard.escapeIsPressed then
+      self.onClose()
+   end
+
    if love.keyboard.controlIsDown or love.keyboard.commandIsDown then
       if love.keyboard.keysPressed[SAVE_BUTTON] then
          local fileData = self.imageData:encode("png")
