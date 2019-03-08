@@ -41,7 +41,7 @@ function TilePicker:create(tilesheets, tileNames)
    local this = {
       tilesheets = tilesheets,
       tilesheetQuads = map(tilesheets, function(tilesheet)
-         local width, height = tilesheet:getDimensions()
+         local width, height = tilesheet.originalImage:getDimensions()
          return love.graphics.newQuad(0, 0, math.min(width, SQUARE_SIZE), math.min(height, SQUARE_SIZE), width, height)
       end),
       hoveredTile = nil,
@@ -101,7 +101,7 @@ function TilePicker:draw()
       if i > 0 then
          love.graphics.setColor(1, 1, 1, 1)
          love.graphics.draw(CHECKERBOARD, CHECKERBOARD_QUAD, x + SQUARE_LEFT_OFFSET, y + SQUARE_TOP_OFFSET)
-         love.graphics.draw(self.tilesheets[i], self.tilesheetQuads[i], x + SQUARE_LEFT_OFFSET, y + SQUARE_TOP_OFFSET)
+         love.graphics.draw(self.tilesheets[i].originalImage, self.tilesheetQuads[i], x + SQUARE_LEFT_OFFSET, y + SQUARE_TOP_OFFSET)
       end
 
       love.graphics.setColor(not (i == self.hoveredTile) and 1 or 0, 1, 1, 1)

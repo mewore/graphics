@@ -5,6 +5,7 @@ require "image-editor"
 require "draw-overlay"
 require "controls/paint-display"
 require "tile-picker"
+require "spritesheet"
 
 MapEditor = {}
 MapEditor.__index = MapEditor
@@ -26,27 +27,6 @@ local mapEncoder = MapEncoder:create()
 -- @returns {int}
 local function getTileIndex(row, column)
    return (row - 1) * COLUMN_COUNT + column
-end
-
---- Divide a spritesheet into quads. The dimensions of the spritesheet must be divisible by the tile dimensions!
--- @param spritesheet {LOVE.Image} - https://love2d.org/wiki/Image
--- @param tileWidth {int}
--- @param tileHeight {int}
--- @returns {LOVE.Quad[]} - https://love2d.org/wiki/Quad
-local function generateQuads(spritesheet, tileWidth, tileHeight)
-   local sheetWidth = spritesheet:getWidth() / tileWidth
-   local sheetHeight = spritesheet:getHeight() / tileHeight
-
-   local quads = {}
-
-   for y = 0, sheetHeight - 1 do
-      for x = 0, sheetWidth - 1 do
-         quads[#quads + 1] = love.graphics.newQuad(x * tileWidth, y * tileHeight, tileWidth, tileHeight,
-            spritesheet:getDimensions())
-      end
-   end
-
-   return quads
 end
 
 local function map(array, functionToApply)
@@ -94,7 +74,7 @@ function MapEditor:create(spritesheetDirectoryPath)
       end
       local fileData = love.filesystem.newFileData(file:read(), file.path)
       local imageData = love.image.newImageData(fileData)
-      return love.graphics.newImage(imageData)
+      return Spritesheet:create(imageData, tileWidth, tileHeight, file.name, true)
    end)
    local navigator = Navigator:create(MAP_WIDTH * tileWidth, MAP_HEIGHT, tileHeight)
 
@@ -103,13 +83,13 @@ function MapEditor:create(spritesheetDirectoryPath)
    local paintDisplayPreviews = {}
    local paintDisplay = PaintDisplay:create(#spritesheets >= 1 and 1 or 0, #spritesheets >= 2 and 2 or 0, function(x, y, tile)
       if tile ~= TILE_EMPTY then
-         love.graphics.draw(spritesheets[tile], paintDisplayPreviews[tile], x, y)
+         love.graphics.draw(spritesheets[tile].originalImage, paintDisplayPreviews[tile], x, y)
       end
    end, TilePicker:create(spritesheets, tileNames))
 
    for i = 1, #spritesheets do
       paintDisplayPreviews[i] = love.graphics.newQuad(0, 0, paintDisplay.previewWidth, paintDisplay.previewHeight,
-         spritesheets[i]:getDimensions())
+         spritesheets[i].originalImage:getDimensions())
    end
 
    local this = {
@@ -119,7 +99,9 @@ function MapEditor:create(spritesheetDirectoryPath)
       tileHeight = tileHeight,
       mapWidth = MAP_WIDTH,
       mapHeight = MAP_HEIGHT,
-      spriteBatches = nil,
+      spriteBatches = map(spritesheets, function(spritesheet)
+         return love.graphics.newSpriteBatch(spritesheet.image, MAP_WIDTH * MAP_WIDTH)
+      end),
       tiles = {},
       tileSprites = nil,
       playerSpawnX = -1,
@@ -166,7 +148,7 @@ function MapEditor:create(spritesheetDirectoryPath)
       end
    end)
 
-   this.tileSprites = map(spritesheets, function(spritesheet) return generateQuads(spritesheet, tileWidth, tileHeight) end)
+   this.tileSprites = map(spritesheets, function(spritesheet) return spritesheet:getQuads() end)
 
    math.randomseed(1)
    for row = 1, this.mapHeight do
@@ -259,9 +241,10 @@ end
 --- Updates the sprite batch with sprites corresponding to the current tiles.
 -- NOTE: A sprite batch is used for efficient rendering.
 function MapEditor:recreateSpriteBatch()
-   self.spriteBatches = map(self.spritesheets, function(spritesheet)
-      return love.graphics.newSpriteBatch(spritesheet, self.mapWidth * self.mapHeight)
-   end)
+   for i = 1, #self.spriteBatches do
+      self.spriteBatches[i]:clear()
+   end
+
    for row = 1, self.mapHeight do
       for column = 1, self.mapWidth do
          local x = (column - 1) * self.tileWidth
