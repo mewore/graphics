@@ -11,9 +11,12 @@ local LEFT_MOUSE_BUTTON = 1
 local TILE_WIDTH = 5
 local TILE_HEIGHT = 5
 
-local WHITE = {r = 1, g = 1, b = 1}
-local BLACK = {r = 0, g = 0, b = 0}
+local WHITE = { r = 1, g = 1, b = 1 }
+local BLACK = { r = 0, g = 0, b = 0 }
 local BORDER_VALUE = 0.7
+
+local CHECKERBOARD_SIZE = 8
+local CHECKERBOARD_VALUE = 0.8
 
 --- Displays a map and allows the user to edit it
 -- @param filename {string} - The path to the file that should be edited
@@ -24,8 +27,8 @@ function ImageEditor:create(filename)
    local width = imageData:getWidth()
    local height = imageData:getHeight()
 
-   local mainColour = {r = 0, g = 0, b = 0, a = 1}
-   local secondaryColour = {r = 0, g = 0, b = 0, a = 1 }
+   local mainColour = { r = 0, g = 0, b = 0, a = 1 }
+   local secondaryColour = { r = 0, g = 0, b = 0, a = 1 }
 
    local navigator = Navigator:create(width * TILE_WIDTH, height * TILE_HEIGHT)
    local this = {
@@ -95,6 +98,37 @@ local function getPixelLightness(imageData, x, y)
    return BORDER_VALUE
 end
 
+local function drawCheckerboard(width, height)
+   love.graphics.setColor(CHECKERBOARD_VALUE, CHECKERBOARD_VALUE, CHECKERBOARD_VALUE, 1)
+
+   local totalWidth, totalHeight = width * TILE_WIDTH, height * TILE_HEIGHT
+   local stepX, stepY = CHECKERBOARD_SIZE * TILE_WIDTH * 2, CHECKERBOARD_SIZE * TILE_HEIGHT * 2
+   local x, y
+   local squareHeight
+
+   y = 0
+   while y < totalHeight do
+      squareHeight = math.min(CHECKERBOARD_SIZE * TILE_HEIGHT, totalHeight - y)
+      x = 0
+      while x < totalWidth do
+         love.graphics.rectangle("fill", x, y, math.min(CHECKERBOARD_SIZE * TILE_WIDTH, totalWidth - x), squareHeight)
+         x = x + stepX
+      end
+      y = y + stepY
+   end
+
+   y = CHECKERBOARD_SIZE * TILE_WIDTH
+   while y < totalHeight do
+      squareHeight = math.min(CHECKERBOARD_SIZE * TILE_HEIGHT, totalHeight - y)
+      x = CHECKERBOARD_SIZE * TILE_WIDTH
+      while x < totalWidth do
+         love.graphics.rectangle("fill", x, y, math.min(CHECKERBOARD_SIZE * TILE_WIDTH, totalWidth - x), squareHeight)
+         x = x + stepX
+      end
+      y = y + stepY
+   end
+end
+
 --- LOVE draw callback
 function ImageEditor:draw()
    -- Gray border
@@ -105,7 +139,8 @@ function ImageEditor:draw()
 
    -- White background
    love.graphics.rectangle("fill", 0, 0, self.imageWidth * TILE_WIDTH, self.imageHeight * TILE_HEIGHT)
-   -- The map itself
+   drawCheckerboard(self.imageWidth, self.imageHeight)
+   -- The image
    for y = 0, self.imageHeight - 1 do
       for x = 0, self.imageWidth - 1 do
          local r, g, b, a = self.imageData:getPixel(x, y)
