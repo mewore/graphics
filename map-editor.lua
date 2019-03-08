@@ -4,6 +4,7 @@ require "navigator"
 require "image-editor"
 require "draw-overlay"
 require "controls/paint-display"
+require "tile-picker"
 
 MapEditor = {}
 MapEditor.__index = MapEditor
@@ -97,12 +98,15 @@ function MapEditor:create(spritesheetDirectoryPath)
    end)
    local navigator = Navigator:create()
 
+   local tileNames = map(allTilesheetFiles, function(file) return file.name end)
+
    local paintDisplayPreviews = {}
    local paintDisplay = PaintDisplay:create(#spritesheets >= 1 and 1 or 0, #spritesheets >= 2 and 2 or 0, function(x, y, tile)
       if tile ~= TILE_EMPTY then
          love.graphics.draw(spritesheets[tile], paintDisplayPreviews[tile], x, y)
       end
-   end)
+   end, TilePicker:create(spritesheets, tileNames))
+
    for i = 1, #spritesheets do
       paintDisplayPreviews[i] = love.graphics.newQuad(0, 0, paintDisplay.previewWidth, paintDisplay.previewHeight,
          spritesheets[i]:getDimensions())
@@ -117,7 +121,6 @@ function MapEditor:create(spritesheetDirectoryPath)
       mapHeight = MAP_HEIGHT,
       spriteBatches = nil,
       tiles = {},
-      tileSheetIndices = {},
       tileSprites = nil,
       playerSpawnX = -1,
       playerSpawnY = -1,
@@ -137,9 +140,7 @@ function MapEditor:create(spritesheetDirectoryPath)
    setmetatable(this, self)
 
    this.editMapTileControls:onDrawProgress(function(points, button)
-      local tileToCreate = (button == LEFT_MOUSE_BUTTON)
-            and paintDisplay.frontTile
-            or paintDisplay.backTile
+      local tileToCreate = (button == LEFT_MOUSE_BUTTON) and paintDisplay.front or paintDisplay.back
       for _, point in pairs(points) do
          if this:getTile(point.x, point.y) ~= tileToCreate then
             this:setTile(point.x, point.y, tileToCreate)
@@ -186,6 +187,10 @@ end
 function MapEditor:update(dt)
    if self.imageEditor then
       self.imageEditor:update(dt)
+      return
+   end
+   if self.paintDisplay.isPickingPaint then
+      self.paintDisplay.paintPicker:update(dt)
       return
    end
 
@@ -301,6 +306,10 @@ end
 function MapEditor:draw()
    if self.imageEditor then
       self.imageEditor:draw()
+      return
+   end
+   if self.paintDisplay.isPickingPaint then
+      self.paintDisplay.paintPicker:draw()
       return
    end
 

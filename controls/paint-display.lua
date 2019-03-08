@@ -8,7 +8,7 @@ local SQUARE_SHADOW_SIZE = 5
 local SQUARE_SHADOW_OPACITY = 0.8
 
 --- A controller that keeps track of an X and Y offset as well as a zoom ratio
-function PaintDisplay:create(initialFront, initialBack, drawFunction)
+function PaintDisplay:create(initialFront, initialBack, drawFunction, paintPicker)
    if drawFunction == nil then
       error("The draw function cannot be nil!")
    end
@@ -20,8 +20,8 @@ function PaintDisplay:create(initialFront, initialBack, drawFunction)
       height = totalSize,
       previewWidth = SQUARE_SIZE,
       previewHeight = SQUARE_SIZE,
-      frontTile = initialFront,
-      backTile = initialBack,
+      front = initialFront,
+      back = initialBack,
       drawFunction = drawFunction,
       hoveredFront = false,
       hoveredBack = false,
@@ -29,8 +29,12 @@ function PaintDisplay:create(initialFront, initialBack, drawFunction)
       frontBottom = 0,
       backLeft = 0,
       backTop = 0,
+      paintPicker = paintPicker,
+      isPickingPaint = false,
    }
    setmetatable(this, self)
+
+   paintPicker.onClose = function() this.isPickingPaint = false end
 
    return this
 end
@@ -52,31 +56,50 @@ function PaintDisplay:update()
    self.hoveredFront = isOverFront
    self.hoveredBack = isOverBack and not isOverFront
 
-   if love.mouse.buttonsPressed[LEFT_MOUSE_BUTTON] then
+   if love.mouse.buttonsPressed[LEFT_MOUSE_BUTTON] and self.paintPicker then
+      if self.hoveredFront then
+         self.isPickingPaint = true
+         self.paintPicker.onPick = function(newPaint)
+            self.front = newPaint
+            self.isPickingPaint = false
+         end
+      elseif self.hoveredBack then
+         self.isPickingPaint = true
+         self.paintPicker.onPick = function(newPaint)
+            self.back = newPaint
+            self.isPickingPaint = false
+         end
+      end
    end
 
    if love.keyboard.keysPressed[SWAP_KEY] then
-      self.frontTile, self.backTile = self.backTile, self.frontTile
+      self.front, self.back = self.back, self.front
    end
 end
 
-local function drawSquareShadow(fromX, fromY, toX, toY)
-   love.graphics.setColor(0, 0, 0, SQUARE_SHADOW_OPACITY)
+local function drawSquareShadow(fromX, fromY, toX, toY, opacityMultiplier)
+   love.graphics.setColor(0, 0, 0, SQUARE_SHADOW_OPACITY * opacityMultiplier)
    love.graphics.rectangle("fill", fromX, fromY, toX - fromX, toY - fromY)
 end
 
 function PaintDisplay:__drawBackSquare()
    love.graphics.setColor(1, 1, 1, 1)
-   self.drawFunction(self.backLeft, self.backTop, self.backTile)
+   self.drawFunction(self.backLeft, self.backTop, self.back)
    love.graphics.setColor(not self.hoveredBack and 1 or 0, 1, 1, 1)
    love.graphics.rectangle("line", self.backLeft, self.backTop, SQUARE_SIZE, SQUARE_SIZE)
 end
 
 function PaintDisplay:__drawFrontSquare()
-   drawSquareShadow(self.backLeft, self.backTop, self.frontRight + SQUARE_SHADOW_SIZE, self.frontBottom + SQUARE_SHADOW_SIZE)
+   local shadowOpacity = 1
+   if self.front == 0 then
+      shadowOpacity = 0.1
+   elseif type(self.front) == "table" and self.front.a ~= nil then
+      shadowOpacity = self.front.a
+   end
+   drawSquareShadow(self.backLeft, self.backTop, self.frontRight + SQUARE_SHADOW_SIZE, self.frontBottom + SQUARE_SHADOW_SIZE, shadowOpacity)
 
    love.graphics.setColor(1, 1, 1, 1)
-   self.drawFunction(self.frontLeft, self.frontTop, self.frontTile)
+   self.drawFunction(self.frontLeft, self.frontTop, self.front)
    love.graphics.setColor(not self.hoveredFront and 1 or 0, 1, 1, 1)
    love.graphics.rectangle("line", self.frontLeft, self.frontTop, SQUARE_SIZE, SQUARE_SIZE)
 end
