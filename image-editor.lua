@@ -42,6 +42,7 @@ function ImageEditor:create(filename)
       navigator = navigator,
       mainColour = mainColour,
       secondaryColour = secondaryColour,
+      onSave = function() end,
    }
    setmetatable(this, self)
 
@@ -73,6 +74,7 @@ function ImageEditor:update(dt)
          local fileData = self.imageData:encode("png")
          local file = NativeFile:create(self.filename)
          file:write(fileData:getString())
+         self.onSave(self.imageData)
       end
       if not self.isPickingColour then
          self.drawControls:zoom(love.mouse.wheel.dy)

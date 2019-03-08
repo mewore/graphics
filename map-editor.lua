@@ -94,6 +94,7 @@ function MapEditor:create(spritesheetDirectoryPath)
 
    local this = {
       directory = spritesheetDirectory,
+      spritesheetFiles = allTilesheetFiles,
       spritesheets = spritesheets,
       tileWidth = tileWidth,
       tileHeight = tileHeight,
@@ -132,7 +133,7 @@ function MapEditor:create(spritesheetDirectoryPath)
    end)
    this.editMapTileControls:onDrawDone(function()
       if this.shouldRecreate then
-         this:recreateSpriteBatch()
+         this:recreateSpriteBatches()
          this.shouldRecreate = false
       end
    end)
@@ -144,6 +145,13 @@ function MapEditor:create(spritesheetDirectoryPath)
             this.imageEditMode = false
             this.imageEditor = ImageEditor:create(allTilesheetFiles[tile].path)
             this.imageEditor.onClose = function() this.imageEditor = nil end
+            this.imageEditor.onSave = function(imageData)
+               spritesheets[tile] = Spritesheet:create(imageData, tileWidth, tileHeight, tileNames[tile], true)
+               paintDisplayPreviews[tile] = love.graphics.newQuad(0, 0, paintDisplay.previewWidth,
+                  paintDisplay.previewHeight, spritesheets[tile].originalImage:getDimensions())
+               this.spriteBatches[tile] = love.graphics.newSpriteBatch(spritesheets[tile].image, MAP_WIDTH * MAP_WIDTH)
+               this:recreateSpriteBatches()
+            end
          end
       end
    end)
@@ -160,7 +168,7 @@ function MapEditor:create(spritesheetDirectoryPath)
       end
    end
 
-   this:recreateSpriteBatch()
+   this:recreateSpriteBatches()
 
    return this
 end
@@ -203,7 +211,7 @@ function MapEditor:update(dt)
          self.mapWidth = data.mapWidth
          self.mapHeight = data.mapHeight
          self.tiles = data.tiles
-         self:recreateSpriteBatch()
+         self:recreateSpriteBatches()
       end
       if not self.tileControlsAreDisabled and not self.imageEditMode then
          self.editMapTileControls:zoom(love.mouse.wheel.dy)
@@ -240,7 +248,7 @@ end
 
 --- Updates the sprite batch with sprites corresponding to the current tiles.
 -- NOTE: A sprite batch is used for efficient rendering.
-function MapEditor:recreateSpriteBatch()
+function MapEditor:recreateSpriteBatches()
    for i = 1, #self.spriteBatches do
       self.spriteBatches[i]:clear()
    end
