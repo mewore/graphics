@@ -65,12 +65,33 @@ local TILE_GROUND_CORNER_BOTTOM_LEFT = getTileIndex(5, 4)
 local LEFT_MOUSE_BUTTON = 1
 
 --- Displays a map and allows the user to edit it
--- @param spritesheetDirectory {string} - The path to the directroy that contains all of the spritesheets
-function MapEditor:create(spritesheetDirectory)
-   local allSpritesheetFilenames = NativeFile:create(spritesheetDirectory):getFiles("png")
-   local spritesheets = map(allSpritesheetFilenames, function(name)
-      local file = NativeFile:create(spritesheetDirectory .. "/" .. name)
-      local fileData = love.filesystem.newFileData(file:read(), name)
+-- @param spritesheetDirectoryPath {string} - The path to the directroy that contains all of the spritesheets
+function MapEditor:create(spritesheetDirectoryPath)
+   local tileNameToInfoFile = {}
+   local spritesheetDirectory = NativeFile:create(spritesheetDirectoryPath)
+   for _, propertiesFile in ipairs(spritesheetDirectory:getFiles("properties")) do
+      tileNameToInfoFile[propertiesFile.name] = propertiesFile
+   end
+
+   local tileWidth, tileHeight
+   local allTilesheetFiles = spritesheetDirectory:getFiles("png")
+   local spritesheets = map(allTilesheetFiles, function(file)
+      local infoFile = tileNameToInfoFile[file.name]
+      if infoFile == nil then
+         error("There is no '" .. file.name .. ".properties' file in " .. spritesheetDirectory.path)
+      end
+      local info = infoFile:readAsTable()
+      if tileWidth == nil then
+         tileWidth = info.width
+         tileHeight = info.height
+      elseif tileWidth ~= info.width then
+         error("Tile '" .. file.name .. "' has a width of " .. info.width ..
+               ", which is not consistent with the established width - " .. tileWidth)
+      elseif tileHeight ~= info.height then
+         error("Tile '" .. file.name .. "' has a height of " .. info.height ..
+               ", which is not consistent with the established height - " .. tileHeight)
+      end
+      local fileData = love.filesystem.newFileData(file:read(), file.path)
       local imageData = love.image.newImageData(fileData)
       return love.graphics.newImage(imageData)
    end)
@@ -82,7 +103,7 @@ function MapEditor:create(spritesheetDirectory)
          love.graphics.draw(spritesheets[tile], paintDisplayPreviews[tile], x, y)
       end
    end)
-   for i = 1 , #spritesheets do
+   for i = 1, #spritesheets do
       paintDisplayPreviews[i] = love.graphics.newQuad(0, 0, paintDisplay.previewWidth, paintDisplay.previewHeight,
          spritesheets[i]:getDimensions())
    end
@@ -90,8 +111,8 @@ function MapEditor:create(spritesheetDirectory)
    local this = {
       directory = spritesheetDirectory,
       spritesheets = spritesheets,
-      tileWidth = 32,
-      tileHeight = 32,
+      tileWidth = tileWidth,
+      tileHeight = tileHeight,
       mapWidth = MAP_WIDTH,
       mapHeight = MAP_HEIGHT,
       spriteBatches = nil,
@@ -100,13 +121,15 @@ function MapEditor:create(spritesheetDirectory)
       tileSprites = nil,
       playerSpawnX = -1,
       playerSpawnY = -1,
-      editMapTileControls = TileControls:create({ r = 1, g = 0, b = 0 }, 32, 32, MAP_WIDTH, MAP_HEIGHT, navigator, false),
-      editImageTileControls = TileControls:create({ r = 0.2, g = 1, b = 0 }, 32, 32, MAP_WIDTH, MAP_HEIGHT, navigator, true),
+      editMapTileControls = TileControls:create({ r = 1, g = 0, b = 0 }, tileWidth, tileHeight,
+         MAP_WIDTH, MAP_HEIGHT, navigator, false),
+      editImageTileControls = TileControls:create({ r = 0.2, g = 1, b = 0 }, tileWidth, tileHeight,
+         MAP_WIDTH, MAP_HEIGHT, navigator, true),
       navigator = navigator,
       shouldRecreate = false,
       imageEditMode = false,
       imageEditor = nil,
-      drawOverlay = DrawOverlay:create({paintDisplay}),
+      drawOverlay = DrawOverlay:create({ paintDisplay }),
       tileControlsAreDisabled = false,
       paintDisplay = paintDisplay,
       onClose = function() end,
@@ -132,17 +155,16 @@ function MapEditor:create(spritesheetDirectory)
    end)
 
    this.editImageTileControls:onDrawProgress(function(points)
-      print("image tile controls activated")
       if points and #points >= 1 then
          local tile = this:getTile(points[1].x, points[1].y)
          if tile ~= TILE_EMPTY then
-            this.imageEditor = ImageEditor:create(this.directory .. "/" .. allSpritesheetFilenames[tile])
+            this.imageEditor = ImageEditor:create(allTilesheetFiles[tile].path)
             this.imageEditor.onClose = function() this.imageEditor = nil end
          end
       end
    end)
 
-   this.tileSprites = map(spritesheets, function(spritesheet) return generateQuads(spritesheet, 32, 32) end)
+   this.tileSprites = map(spritesheets, function(spritesheet) return generateQuads(spritesheet, tileWidth, tileHeight) end)
 
    math.randomseed(1)
    for row = 1, this.mapHeight do

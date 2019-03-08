@@ -1,3 +1,5 @@
+require "properties-encoder"
+
 NativeFile = {}
 NativeFile.__index = NativeFile
 
@@ -13,8 +15,22 @@ local CHECK_ATTRIBUTES_FILE_LOCATION = love.filesystem.getSaveDirectory() .. "/"
 -- The interface of this class is similar to Java"s File
 -- @param path {string} - The path to the file
 function NativeFile:create(path)
+   local filename = string.gsub(path, ".*[/\\]", "")
+   local nameParts = {}
+   for part in string.gmatch(filename, "([^.]+)") do
+      nameParts[#nameParts + 1] = part
+   end
+   local extension
+   if #nameParts > 1 then
+      extension = nameParts[#nameParts]
+      nameParts[#nameParts] = nil
+   end
+   local name = table.concat(nameParts, ".")
    local this = {
       path = path,
+      filename = filename,
+      name = name,
+      extension = extension,
    }
    setmetatable(this, self)
    return this
@@ -43,6 +59,13 @@ function NativeFile:read()
    local contents = file:read("*all")
    file:close()
    return contents
+end
+
+--- If this is a .properties file, it can be read as a table. Currently, only single-line properties are supported.
+-- @returns {string} - The properties described in the file
+function NativeFile:readAsTable()
+   local contents = self:read()
+   return PropertiesEncoder:create():decode(contents)
 end
 
 --- Create or overwrite the file with the specified contents.
@@ -89,7 +112,7 @@ function NativeFile:getFiles(extension)
    file:close()
    local result = {}
    for match in string.gmatch(output, (extension == nil) and "([^\n]+)\n" or ("([^\n]-%." .. extension .. ")\n")) do
-      result[#result + 1] = match
+      result[#result + 1] = NativeFile:create(self.path .. "/" .. match)
    end
    return result
 end
@@ -106,7 +129,7 @@ function NativeFile:getDirectories()
    file:close()
    local result = {}
    for match in string.gmatch(output, "(..-)\n") do
-      result[#result + 1] = match
+      result[#result + 1] = NativeFile:create(self.path .. "/" .. match)
    end
    return result
 end
