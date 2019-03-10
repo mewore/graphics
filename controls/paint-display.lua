@@ -92,8 +92,8 @@ function PaintDisplay:update()
    end
 end
 
-local function drawSquareShadow(fromX, fromY, toX, toY, opacityMultiplier)
-   love.graphics.setColor(0, 0, 0, SQUARE_SHADOW_OPACITY * opacityMultiplier)
+local function drawSquareShadow(fromX, fromY, toX, toY)
+   love.graphics.setColor(0, 0, 0, SQUARE_SHADOW_OPACITY)
    love.graphics.rectangle("fill", fromX, fromY, toX - fromX, toY - fromY)
 end
 
@@ -109,13 +109,7 @@ function PaintDisplay:__drawBackSquare()
 end
 
 function PaintDisplay:__drawFrontSquare()
-   local shadowOpacity = 1
-   if self.front == 0 then
-      shadowOpacity = 0.1
-   elseif type(self.front) == "table" and self.front.a ~= nil then
-      shadowOpacity = self.front.a
-   end
-   drawSquareShadow(self.backLeft, self.backTop, self.frontRight + SQUARE_SHADOW_SIZE, self.frontBottom + SQUARE_SHADOW_SIZE, shadowOpacity)
+   drawSquareShadow(self.backLeft, self.backTop, self.frontRight + SQUARE_SHADOW_SIZE, self.frontBottom + SQUARE_SHADOW_SIZE)
 
    love.graphics.setColor(CHECKERBOARD_DARK_VALUE, CHECKERBOARD_DARK_VALUE, CHECKERBOARD_DARK_VALUE)
    love.graphics.rectangle("fill", self.frontLeft, self.frontTop, SQUARE_SIZE, SQUARE_SIZE)
