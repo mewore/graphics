@@ -1,5 +1,5 @@
 require "tile-controls"
-require "map-encoder"
+require "data/map-encoder"
 require "navigator"
 require "image-editor"
 require "controls/sidebar"

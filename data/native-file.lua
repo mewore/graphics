@@ -1,4 +1,4 @@
-require "json-encoder"
+require "data/json-encoder"
 
 NativeFile = {}
 NativeFile.__index = NativeFile

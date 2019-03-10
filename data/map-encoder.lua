@@ -1,5 +1,5 @@
-require "native-file"
-require "json-encoder"
+require "data/native-file"
+require "data/json-encoder"
 
 MapEncoder = {}
 MapEncoder.__index = MapEncoder

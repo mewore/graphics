@@ -1,4 +1,4 @@
-require "math-utils"
+require "util/math-utils"
 
 TileControls = {}
 TileControls.__index = TileControls

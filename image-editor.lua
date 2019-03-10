@@ -1,5 +1,5 @@
 require "tile-controls"
-require "native-file"
+require "data/native-file"
 require "navigator"
 
 ImageEditor = {}
