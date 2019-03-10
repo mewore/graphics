@@ -20,8 +20,8 @@ function TileControls:create(colour, tileWidth, tileHeight, canvasWidth, canvasH
       tileHeight = tileHeight,
       canvasWidth = canvasWidth,
       canvasHeight = canvasHeight,
-      drawProgressCallback = function() end,
-      drawDoneCallback = function() end,
+      drawProgressHandler = function() end,
+      drawDoneHandler = function() end,
       leftHoveredColumn = 0,
       topHoveredRow = 0,
       lastMouseDownPosition = nil,
@@ -38,15 +38,15 @@ function TileControls:create(colour, tileWidth, tileHeight, canvasWidth, canvasH
 end
 
 --- Add a handler for when the mouse is held down
--- @param callback {function}
-function TileControls:onDrawProgress(callback)
-   self.drawProgressCallback = callback
+-- @param handler {function}
+function TileControls:onDrawProgress(handler)
+   self.drawProgressHandler = handler
 end
 
---- Add a handler for when the mouse is held down
--- @param callback {function}
-function TileControls:onDrawDone(callback)
-   self.drawDoneCallback = callback
+--- Add a handler when a set of draw operations are complete
+-- @param handler {function}
+function TileControls:onDrawDone(handler)
+   self.drawDoneHandler = handler
 end
 
 function TileControls:zoom(mouseScrollDy)
@@ -194,7 +194,7 @@ local function callForEachPointInPath(callback, initialLeftX, initialTopY, size,
    end
 end
 
---- LOVE update callback
+--- LOVE update handler
 function TileControls:update()
    self.invisible = self.drawingWith == nil and self.isOverlayHovered
    if self.invisible then
@@ -210,7 +210,7 @@ function TileControls:update()
    for mouseButton = 1, 2 do
       if love.mouse.buttonsPressed[mouseButton] then
          if self.singular then
-            self.drawProgressCallback(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
+            self.drawProgressHandler(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
                self.canvasWidth, self.canvasHeight), mouseButton)
             return
          end
@@ -234,22 +234,22 @@ function TileControls:update()
    self.drawingWith = drawingWith
 
    if self.lastMouseDownPosition == nil then
-      self.drawProgressCallback(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
+      self.drawProgressHandler(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
          self.canvasWidth, self.canvasHeight), drawingWith)
    elseif self.leftHoveredColumn ~= self.lastMouseDownPosition.x
          or self.topHoveredRow ~= self.lastMouseDownPosition.y then
       local drawPath = mathUtils:getDiscreteLine(self.lastMouseDownPosition.x, self.lastMouseDownPosition.y,
          self.leftHoveredColumn, self.topHoveredRow)
-      callForEachPointInPath(function(points) self.drawProgressCallback(points, drawingWith) end,
+      callForEachPointInPath(function(points) self.drawProgressHandler(points, drawingWith) end,
          self.lastMouseDownPosition.x, self.lastMouseDownPosition.y, self.size, drawPath,
          self.canvasWidth, self.canvasHeight)
    end
 
-   self.drawDoneCallback()
+   self.drawDoneHandler()
    self.lastMouseDownPosition = { x = self.leftHoveredColumn, y = self.topHoveredRow }
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function TileControls:draw()
    if self.invisible then
       return

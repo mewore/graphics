@@ -31,7 +31,7 @@ function DrawOverlay:isHovered()
    return love.mouse.getX() < WIDTH
 end
 
---- LOVE update callback
+--- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function DrawOverlay:update(dt)
    for i = 1, #self.controls do
@@ -45,7 +45,7 @@ function DrawOverlay:update(dt)
    self.opacity = targetOpacity - opacityDifference
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function DrawOverlay:draw()
    love.graphics.setColor(VALUE, VALUE, VALUE, self.opacity)
    love.graphics.rectangle("fill", 0, 0, WIDTH, love.graphics.getHeight())

@@ -62,7 +62,7 @@ function ImageEditor:create(filename)
    return this
 end
 
---- LOVE update callback
+--- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function ImageEditor:update(dt)
    if love.keyboard.escapeIsPressed then
@@ -131,7 +131,7 @@ local function drawCheckerboard(width, height)
    end
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function ImageEditor:draw()
    -- Gray border
    love.graphics.clear(BORDER_VALUE, BORDER_VALUE, BORDER_VALUE)

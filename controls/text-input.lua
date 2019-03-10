@@ -42,7 +42,7 @@ function TextInput:create(width, placeholder, initialValue)
    return this
 end
 
---- LOVE update callback
+--- LOVE update handler
 function TextInput:update()
    if love.mouse.hasPressedInsideObject(self) then
       self.focusedSince = love.timer.getTime()
@@ -74,7 +74,7 @@ local function setColour(colour)
    return true
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function TextInput:draw()
    if self.focusedSince == nil and not love.mouse.isInsideObject(self) then
       setColour(BOX_NOT_FOCUSED_OR_HOVER_FILL_COLOUR)

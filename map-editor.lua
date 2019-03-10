@@ -185,7 +185,7 @@ function MapEditor:create(spritesheetDirectoryPath)
    return this
 end
 
---- LOVE update callback
+--- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function MapEditor:update(dt)
    if self.tools[TOOL_POINT_EDITOR].dialog then
@@ -313,7 +313,7 @@ function MapEditor:recreateSpriteBatches()
    end
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function MapEditor:draw()
    if self.imageEditor then
       self.imageEditor:draw()

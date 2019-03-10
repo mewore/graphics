@@ -34,7 +34,7 @@ function Navigator:create(canvasWidth, canvasHeight)
    return this
 end
 
---- LOVE update callback
+--- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function Navigator:update(dt)
    if love.keyboard.controlIsDown then

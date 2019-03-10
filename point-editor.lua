@@ -72,7 +72,7 @@ local function getSquaredDistance(fromX, fromY, toX, toY)
    return dx * dx + dy * dy
 end
 
---- LOVE update callback
+--- LOVE update handler
 function PointEditor:update()
    local pointDragInfo = self.pointDragInfo
    if self.isOverlayHovered and not pointDragInfo then
@@ -192,7 +192,7 @@ local function setColour(colour)
    return true
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function PointEditor:draw()
    local mouseX, mouseY = love.mouse.getPosition()
 

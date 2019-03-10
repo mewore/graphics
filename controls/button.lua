@@ -63,7 +63,7 @@ function Button:create(label, type, onClick)
    return this
 end
 
---- LOVE update callback
+--- LOVE update handler
 function Button:update()
    if love.mouse.hasPressedInsideObject(self) then
       self.onClick()
@@ -82,7 +82,7 @@ local function setColour(colour)
    return true
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function Button:draw()
    if setColour(BUTTON_FILL_COLOUR_PER_TYPE[self.type]) then
       love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, BORDER_RADIUS, BORDER_RADIUS)

@@ -54,7 +54,7 @@ function TilePicker:create(tilesheets, tileNames)
    return this
 end
 
---- LOVE update callback
+--- LOVE update handler
 function TilePicker:update()
    if love.keyboard.escapeIsPressed then
       self.onClose()
@@ -82,7 +82,7 @@ function TilePicker:update()
    end
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function TilePicker:draw()
    love.graphics.clear(BACKGROUND_VALUE * 1.1, BACKGROUND_VALUE, BACKGROUND_VALUE * 1.2)
 

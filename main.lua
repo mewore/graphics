@@ -11,39 +11,39 @@ love.keyboard.input = ""
 love.mouse.buttonsPressed = {}
 love.mouse.wheel = { dx = 0, dy = 0 }
 
---- LOVE load callback
+--- LOVE load handler
 function love.load()
    love.graphics.setDefaultFilter("nearest", "nearest")
 end
 
---- LOVE key pressed callback
+--- LOVE key pressed handler
 -- @param key {string} - The pressed key
 function love.keypressed(key)
    print("Pressed:", key)
    love.keyboard.keysPressed[key] = true
 end
 
---- LOVE key released callback
+--- LOVE key released handler
 -- @param key {string} - The released key
 function love.keyreleased(key)
    print("Released:", key)
    love.keyboard.keysReleased[key] = true
 end
 
---- LOVE text input callback
+--- LOVE text input handler
 -- @param text {string} - The input
 function love.textinput(text)
    love.keyboard.input = love.keyboard.input .. text
 end
 
---- LOVE mouse wheel scroll callback
+--- LOVE mouse wheel scroll handler
 -- @param dx {int} - The horizontal movement of the wheel scroll
 -- @param dy {int} - The vertical movement of the wheel scroll (positive ~ forwards, negative ~ backwards)
 function love.wheelmoved(dx, dy)
    love.mouse.wheel.dx, love.mouse.wheel.dy = love.mouse.wheel.dx + dx, love.mouse.wheel.dy + dy
 end
 
---- LOVE mouse click callback
+--- LOVE mouse click handler
 -- @param x {int} - Mouse x position, in pixels
 -- @param y {int} - Mouse y position, in pixels
 -- @param button {int} - The button index that was pressed. 1 is the primary mouse button,
@@ -94,7 +94,7 @@ function love.mouse.hasPressedInside(leftX, topY, bottomX, bottomY, buttons)
    return false
 end
 
---- LOVE update callback
+--- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function love.update(dt)
    love.mouse.cursor = NORMAL_CURSOR
@@ -114,7 +114,7 @@ function love.update(dt)
    love.mouse.setCursor(love.mouse.cursor)
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function love.draw()
    love.graphics.clear(1, 1, 1, 1)
    mapEditor:draw()

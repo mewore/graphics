@@ -48,7 +48,7 @@ function PaintDisplay:create(initialFront, initialBack, drawFunction, paintPicke
    return this
 end
 
---- LOVE update callback
+--- LOVE update handler
 function PaintDisplay:update()
    self.frontLeft = self.x
    self.frontTop = self.x
@@ -113,7 +113,7 @@ function PaintDisplay:__drawFrontSquare()
    love.graphics.rectangle("line", self.frontLeft, self.frontTop, SQUARE_SIZE, SQUARE_SIZE)
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function PaintDisplay:draw()
    self:__drawBackSquare()
    self:__drawFrontSquare()

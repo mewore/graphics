@@ -45,7 +45,7 @@ function Dialog:create(title, message, controls, buttons)
    return this
 end
 
---- LOVE update callback
+--- LOVE update handler
 function Dialog:update(dt)
    if love.keyboard.returnIsPressed then
       self.buttons[#self.buttons].onClick()
@@ -79,7 +79,7 @@ function Dialog:update(dt)
    self.y = math.floor((love.graphics.getHeight() - self.height) / 2)
 end
 
---- LOVE draw callback
+--- LOVE draw handler
 function Dialog:draw()
    love.graphics.setColor(OVERLAY.r, OVERLAY.g, OVERLAY.b, OVERLAY.a)
    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
