@@ -1,4 +1,4 @@
-require "tile-controls"
+require "tools/tile-controls"
 require "data/map-encoder"
 require "navigator"
 require "image-editor"
@@ -6,7 +6,7 @@ require "controls/sidebar"
 require "controls/paint-display"
 require "controls/tile-picker"
 require "spritesheet"
-require "point-editor"
+require "tools/point-editor"
 
 MapEditor = {}
 MapEditor.__index = MapEditor

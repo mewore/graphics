@@ -1,4 +1,4 @@
-require "tile-controls"
+require "tools/tile-controls"
 require "data/native-file"
 require "navigator"
 
