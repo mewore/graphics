@@ -28,8 +28,8 @@ end
 function MapEncoder:saveToFile(filename, map)
    local mapData = encodeMapTiles(map.tiles, map.mapWidth, map.mapHeight)
    local mapPropertiesData = JsonEncoder:create():encode({
-      mapWidth = map.mapWidth,
-      mapHeight = map.mapHeight,
+      width = map.width,
+      height = map.height,
       points = map.points,
    })
 
