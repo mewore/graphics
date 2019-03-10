@@ -5,7 +5,7 @@ require "image-editor"
 require "controls/sidebar"
 require "controls/paint-display"
 require "controls/tile-picker"
-require "spritesheet"
+require "data/spritesheet"
 require "tools/point-editor"
 
 MapEditor = {}
