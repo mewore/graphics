@@ -72,11 +72,19 @@ function Navigator:update(dt)
 end
 
 --- Convert screen (x, y) coordinates to absolute ones
--- @param x {number} - The X coordinate from the left of the screen
--- @param y {number} - The Y coordinate from the top of the screen
+-- @param xScreen {number} - The X coordinate from the left of the screen
+-- @param yScreen {number} - The Y coordinate from the top of the screen
 -- @returns {number, number} - The absolute coordinates
-function Navigator:screenToAbsolute(x, y)
-   return self.x + x / self.zoom, self.y + y / self.zoom
+function Navigator:screenToAbsolute(xScreen, yScreen)
+   return self.x + xScreen / self.zoom, self.y + yScreen / self.zoom
+end
+
+--- Convert absolute (x, y) coordinates to screen ones
+-- @param xAbsolute {number} - The X coordinate from the left of the canvas
+-- @param yAbsolute {number} - The Y coordinate from the top of the canvas
+-- @returns {number, number} - The screen coordinates
+function Navigator:absoluteToScreen(xAbsolute, yAbsolute)
+   return (xAbsolute - self.x) * self.zoom, (yAbsolute - self.y) * self.zoom
 end
 
 --- Scale the rendering process according to the position and zoom

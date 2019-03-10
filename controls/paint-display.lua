@@ -7,7 +7,12 @@ local SWAP_KEY = "x"
 local SQUARE_SHADOW_SIZE = 5
 local SQUARE_SHADOW_OPACITY = 0.8
 
---- A controller that keeps track of an X and Y offset as well as a zoom ratio
+--- A preview of the currently used "front" and "back" paint ("paint" can mean colour, tile, etc.), and allows them to
+-- be configured
+-- @param initialFront {string} - The initial front paint
+-- @param initialBack {string} - The intiial back paint
+-- @param drawFunction {function} - A callback that draws a paint preview
+-- @param paintPicker {Object} - An object that supports picking a paint, e.g. TilePicker
 function PaintDisplay:create(initialFront, initialBack, drawFunction, paintPicker)
    if drawFunction == nil then
       error("The draw function cannot be nil!")
@@ -25,10 +30,14 @@ function PaintDisplay:create(initialFront, initialBack, drawFunction, paintPicke
       drawFunction = drawFunction,
       hoveredFront = false,
       hoveredBack = false,
+      frontLeft = 0,
+      frontTop = 0,
       frontRight = 0,
       frontBottom = 0,
       backLeft = 0,
       backTop = 0,
+      backRight = 0,
+      backBottom = 0,
       paintPicker = paintPicker,
       isPickingPaint = false,
    }

@@ -6,6 +6,7 @@ require "draw-overlay"
 require "controls/paint-display"
 require "tile-picker"
 require "spritesheet"
+require "point-editor"
 
 MapEditor = {}
 MapEditor.__index = MapEditor
@@ -15,7 +16,6 @@ local MAP_HEIGHT = 32
 
 local COLUMN_COUNT = 4
 
-local EDIT_BUTTON = "e"
 local SAVE_BUTTON = "s"
 local LOAD_BUTTON = "l"
 local MAP_SAVE_FILE_NAME = love.filesystem.getWorkingDirectory() .. "/maps/test"
@@ -45,13 +45,23 @@ local TILE_GROUND_CORNER_BOTTOM_LEFT = getTileIndex(5, 4)
 
 local LEFT_MOUSE_BUTTON = 1
 
+local TOOL_MAP_EDITOR = 1
+local TOOL_IMAGE_EDITOR = 2
+local TOOL_POINT_EDITOR = 3
+
+local TOOL_HOTKEYS = {
+   q = TOOL_MAP_EDITOR,
+   e = TOOL_IMAGE_EDITOR,
+   r = TOOL_POINT_EDITOR,
+}
+
 --- Displays a map and allows the user to edit it
 -- @param spritesheetDirectoryPath {string} - The path to the directroy that contains all of the spritesheets
 function MapEditor:create(spritesheetDirectoryPath)
    local tileNameToInfoFile = {}
    local spritesheetDirectory = NativeFile:create(spritesheetDirectoryPath)
-   for _, propertiesFile in ipairs(spritesheetDirectory:getFiles("properties")) do
-      tileNameToInfoFile[propertiesFile.name] = propertiesFile
+   for _, jsonFile in ipairs(spritesheetDirectory:getFiles("json")) do
+      tileNameToInfoFile[jsonFile.name] = jsonFile
    end
 
    local tileWidth, tileHeight
@@ -59,9 +69,9 @@ function MapEditor:create(spritesheetDirectoryPath)
    local spritesheets = map(allTilesheetFiles, function(file)
       local infoFile = tileNameToInfoFile[file.name]
       if infoFile == nil then
-         error("There is no '" .. file.name .. ".properties' file in " .. spritesheetDirectory.path)
+         error("There is no '" .. file.name .. ".json' file in " .. spritesheetDirectory.path)
       end
-      local info = infoFile:readAsTable()
+      local info = infoFile:readAsJson()
       if tileWidth == nil then
          tileWidth = info.width
          tileHeight = info.height
@@ -105,13 +115,17 @@ function MapEditor:create(spritesheetDirectoryPath)
       end),
       tiles = {},
       tileSprites = nil,
-      editMapTileControls = TileControls:create({ r = 1, g = 0, b = 0 }, tileWidth, tileHeight,
-         MAP_WIDTH, MAP_HEIGHT, navigator, false),
-      editImageTileControls = TileControls:create({ r = 0.2, g = 1, b = 0 }, tileWidth, tileHeight,
-         MAP_WIDTH, MAP_HEIGHT, navigator, true),
       navigator = navigator,
       shouldRecreate = false,
-      imageEditMode = false,
+      activeTool = TOOL_MAP_EDITOR,
+      previousTool = TOOL_MAP_EDITOR,
+      tools = {
+         [TOOL_MAP_EDITOR] = TileControls:create({ r = 1, g = 0, b = 0 }, tileWidth, tileHeight,
+            MAP_WIDTH, MAP_HEIGHT, navigator, false),
+         [TOOL_IMAGE_EDITOR] = TileControls:create({ r = 0.2, g = 1, b = 0 }, tileWidth, tileHeight,
+            MAP_WIDTH, MAP_HEIGHT, navigator, true),
+         [TOOL_POINT_EDITOR] = PointEditor:create(navigator),
+      },
       imageEditor = nil,
       drawOverlay = DrawOverlay:create({ paintDisplay }),
       tileControlsAreDisabled = false,
@@ -120,7 +134,7 @@ function MapEditor:create(spritesheetDirectoryPath)
    }
    setmetatable(this, self)
 
-   this.editMapTileControls:onDrawProgress(function(points, button)
+   this.tools[TOOL_MAP_EDITOR]:onDrawProgress(function(points, button)
       local tileToCreate = (button == LEFT_MOUSE_BUTTON) and paintDisplay.front or paintDisplay.back
       for _, point in pairs(points) do
          if this:getTile(point.x, point.y) ~= tileToCreate then
@@ -129,18 +143,19 @@ function MapEditor:create(spritesheetDirectoryPath)
          end
       end
    end)
-   this.editMapTileControls:onDrawDone(function()
+   this.tools[TOOL_MAP_EDITOR]:onDrawDone(function()
       if this.shouldRecreate then
          this:recreateSpriteBatches()
          this.shouldRecreate = false
       end
    end)
 
-   this.editImageTileControls:onDrawProgress(function(points)
+   this.tools[TOOL_IMAGE_EDITOR]:onDrawProgress(function(points)
       if points and #points >= 1 then
          local tile = this:getTile(points[1].x, points[1].y)
          if tile ~= TILE_EMPTY then
-            this.imageEditMode = false
+            this.activeTool = this.previousTool
+            this.previousTool = TOOL_IMAGE_EDITOR
             this.imageEditor = ImageEditor:create(allTilesheetFiles[tile].path)
             this.imageEditor.onClose = function() this.imageEditor = nil end
             this.imageEditor.onSave = function(imageData)
@@ -167,13 +182,16 @@ function MapEditor:create(spritesheetDirectoryPath)
    end
 
    this:recreateSpriteBatches()
-
    return this
 end
 
 --- LOVE update callback
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function MapEditor:update(dt)
+   if self.tools[TOOL_POINT_EDITOR].dialog then
+      self.tools[TOOL_POINT_EDITOR].dialog:update(dt)
+      return
+   end
    if self.imageEditor then
       self.imageEditor:update(dt)
       return
@@ -187,39 +205,42 @@ function MapEditor:update(dt)
       self.onClose()
    end
 
-   local activeControls = self.imageEditMode and self.editImageTileControls or self.editMapTileControls
-
-   if love.keyboard.keysPressed[EDIT_BUTTON] then
-      activeControls.drawingWith = nil
-
-      self.imageEditMode = not self.imageEditMode
-      activeControls = self.imageEditMode and self.editImageTileControls or self.editMapTileControls
+   for hotkey, tool in pairs(TOOL_HOTKEYS) do
+      if love.keyboard.keysPressed[hotkey] then
+         self.tools[self.activeTool].drawingWith = nil
+         self.activeTool = tool
+      end
    end
 
-   self.tileControlsAreDisabled = self.drawOverlay:isHovered() and activeControls.drawingWith == nil
-   self.drawOverlay:update(dt)
+   self.tools[self.activeTool].isOverlayHovered = self.drawOverlay:isHovered()
+   self.drawOverlay.isOpaque = self.drawOverlay:isHovered() and self.tools[self.activeTool].drawingWith == nil
 
    if love.keyboard.controlIsDown or love.keyboard.commandIsDown then
       if love.keyboard.keysPressed[SAVE_BUTTON] then
          print("Saving to file: ", MAP_SAVE_FILE_NAME)
-         mapEncoder:saveToFile(MAP_SAVE_FILE_NAME, self)
+         mapEncoder:saveToFile(MAP_SAVE_FILE_NAME, {
+            mapWidth = self.mapWidth,
+            mapHeight = self.mapHeight,
+            tiles = self.tiles,
+            points = self.tools[TOOL_POINT_EDITOR].points,
+         })
       elseif love.keyboard.keysPressed[LOAD_BUTTON] then
          print("Loading from file: ", MAP_SAVE_FILE_NAME)
          local data = mapEncoder:loadFromFile(MAP_SAVE_FILE_NAME)
          self.mapWidth = data.mapWidth
          self.mapHeight = data.mapHeight
          self.tiles = data.tiles
+         self.tools[TOOL_POINT_EDITOR]:setPoints(data.points)
          self:recreateSpriteBatches()
       end
-      if not self.tileControlsAreDisabled and not self.imageEditMode then
-         self.editMapTileControls:zoom(love.mouse.wheel.dy)
+      if not self.drawOverlay.isOpaque and self.activeTool == TOOL_MAP_EDITOR then
+         self.tools[TOOL_MAP_EDITOR]:zoom(love.mouse.wheel.dy)
       end
    end
 
+   self.tools[self.activeTool]:update(dt)
    self.navigator:update(dt)
-   if not self.tileControlsAreDisabled then
-      activeControls:update()
-   end
+   self.drawOverlay:update(dt)
 end
 
 --- Gets the tile from a specified cell
@@ -316,13 +337,16 @@ function MapEditor:draw()
    for _, spriteBatch in ipairs(self.spriteBatches) do
       love.graphics.draw(spriteBatch)
    end
-   -- The tile cursor
-   if not self.tileControlsAreDisabled then
-      local activeControls = self.imageEditMode and self.editImageTileControls or self.editMapTileControls
-      activeControls:draw()
+   -- TOOL
+   if self.activeTool == TOOL_POINT_EDITOR then
+      love.graphics.pop()
+      self.tools[TOOL_POINT_EDITOR]:draw()
+   else
+      self.tools[self.activeTool]:draw()
+      love.graphics.pop()
    end
 
-   love.graphics.pop()
-   self.drawOverlay.isOpaque = self.tileControlsAreDisabled
-   self.drawOverlay:draw()
+   if not self.tools[TOOL_POINT_EDITOR].dialog then
+      self.drawOverlay:draw()
+   end
 end

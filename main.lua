@@ -1,10 +1,13 @@
 require "map-editor"
 
+local NORMAL_CURSOR = love.mouse.getSystemCursor("arrow")
+
 local mapEditor = MapEditor:create(love.filesystem.getWorkingDirectory() .. "/tilesheets")
 mapEditor.onClose = function() love.event.quit() end
 
 love.keyboard.keysPressed = {}
 love.keyboard.keysReleased = {}
+love.keyboard.input = ""
 love.mouse.buttonsPressed = {}
 love.mouse.wheel = { dx = 0, dy = 0 }
 
@@ -27,6 +30,12 @@ function love.keyreleased(key)
    love.keyboard.keysReleased[key] = true
 end
 
+--- LOVE text input callback
+-- @param text {string} - The input
+function love.textinput(text)
+   love.keyboard.input = love.keyboard.input .. text
+end
+
 --- LOVE mouse wheel scroll callback
 -- @param dx {int} - The horizontal movement of the wheel scroll
 -- @param dy {int} - The vertical movement of the wheel scroll (positive ~ forwards, negative ~ backwards)
@@ -46,20 +55,63 @@ function love.mousepressed(x, y, button, isTouch, presses)
    love.mouse.buttonsPressed[button] = { x = x, y = y, isTouch = isTouch, presses = presses }
 end
 
+function love.mouse.isInside(leftX, topY, bottomX, bottomY)
+   return love.mouse.getX() >= leftX and love.mouse.getX() <= bottomX
+         and love.mouse.getY() >= topY and love.mouse.getY() <= bottomY
+end
+
+function love.mouse.isInsideObject(object)
+   return love.mouse.isInside(object.x, object.y, object.x + object.width, object.y + object.height)
+end
+
+function love.mouse.hasPressedInside(leftX, topY, bottomX, bottomY, buttons)
+   buttons = buttons or { 1, 2, 3 }
+   for _, button in ipairs(buttons) do
+      local mousePress = love.mouse.buttonsPressed[button]
+      if mousePress
+            and mousePress.x >= leftX and mousePress.x <= bottomX
+            and mousePress.y >= topY and mousePress.y <= bottomY then
+         return true
+      end
+   end
+   return false
+end
+
+function love.mouse.hasPressedInsideObject(object, buttons)
+   return love.mouse.hasPressedInside(object.x, object.y, object.x + object.width, object.y + object.height, buttons)
+end
+
+function love.mouse.hasPressedInside(leftX, topY, bottomX, bottomY, buttons)
+   buttons = buttons or { 1, 2, 3 }
+   for _, button in ipairs(buttons) do
+      local mousePress = love.mouse.buttonsPressed[button]
+      if mousePress
+            and mousePress.x >= leftX and mousePress.x <= bottomX
+            and mousePress.y >= topY and mousePress.y <= bottomY then
+         return true
+      end
+   end
+   return false
+end
+
 --- LOVE update callback
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function love.update(dt)
+   love.mouse.cursor = NORMAL_CURSOR
    love.keyboard.controlIsDown = love.keyboard.isDown("rctrl") or love.keyboard.isDown("lctrl")
    love.keyboard.shiftIsDown = love.keyboard.isDown("rshift") or love.keyboard.isDown("lshift")
    love.keyboard.altIsDown = love.keyboard.isDown("ralt") or love.keyboard.isDown("lalt")
    love.keyboard.commandIsDown = love.keyboard.isDown("rgui") or love.keyboard.isDown("lgui")
    love.keyboard.escapeIsPressed = love.keyboard.keysPressed["escape"]
+   love.keyboard.returnIsPressed = love.keyboard.keysPressed["return"]
 
    mapEditor:update(dt)
    love.keyboard.keysPressed = {}
    love.keyboard.keysReleased = {}
+   love.keyboard.input = ""
    love.mouse.buttonsPressed = {}
    love.mouse.wheel.dx, love.mouse.wheel.dy = 0, 0
+   love.mouse.setCursor(love.mouse.cursor)
 end
 
 --- LOVE draw callback

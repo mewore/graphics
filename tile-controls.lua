@@ -29,6 +29,8 @@ function TileControls:create(colour, tileWidth, tileHeight, canvasWidth, canvasH
       size = 1,
       singular = singular,
       drawingWith = nil,
+      visible = true,
+      isOverlayHovered = false,
    }
    setmetatable(this, self)
 
@@ -194,10 +196,8 @@ end
 
 --- LOVE update callback
 function TileControls:update()
-   -- If a canvas that uses a tile control is opened with a click, the tile control would be initiated from the start,
-   -- which is not user-friendly at all.
-   self.lackOfMouseActivityDetected = self.lackOfMouseActivityDetected or not love.mouse.isDown(1, 2)
-   if not self.lackOfMouseActivityDetected then
+   self.invisible = self.drawingWith == nil and self.isOverlayHovered
+   if self.invisible then
       return
    end
 
@@ -251,6 +251,10 @@ end
 
 --- LOVE draw callback
 function TileControls:draw()
+   if self.invisible then
+      return
+   end
+
    local leftX = (self.leftHoveredColumn - 1) * self.tileWidth
    local topY = (self.topHoveredRow - 1) * self.tileHeight
 

@@ -1,5 +1,5 @@
 require "native-file"
-require "properties-encoder"
+require "json-encoder"
 
 MapEncoder = {}
 MapEncoder.__index = MapEncoder
@@ -27,16 +27,17 @@ end
 -- @param map {table}
 function MapEncoder:saveToFile(filename, map)
    local mapData = encodeMapTiles(map.tiles, map.mapWidth, map.mapHeight)
-   local mapPropertiesData = PropertiesEncoder:create():encode({
+   local mapPropertiesData = JsonEncoder:create():encode({
       mapWidth = map.mapWidth,
       mapHeight = map.mapHeight,
+      points = map.points,
    })
 
    local mapFile = NativeFile:create(filename .. ".map")
-   local mapPropertiesFile = NativeFile:create(filename .. ".properties")
+   local mapJsonFile = NativeFile:create(filename .. ".json")
 
    mapFile:write(mapData)
-   mapPropertiesFile:write(mapPropertiesData)
+   mapJsonFile:write(mapPropertiesData)
 end
 
 --- Decode a tile string into an array of tiles
@@ -46,7 +47,6 @@ local function decodeMapTiles(rawTiles)
    local tiles = {}
    local length = string.len(rawTiles)
    for index = 1, length do
---      tiles[index] = string.byte(rawTiles, index) - TILE_BYTE_OFFSET
       tiles[index] = 127 - string.byte(rawTiles, index)
    end
    return tiles
@@ -57,9 +57,9 @@ end
 -- @returns {table} - The decoded data
 function MapEncoder:loadFromFile(filename)
    local mapFile = NativeFile:create(filename .. ".map")
-   local mapPropertiesFile = NativeFile:create(filename .. ".properties")
+   local mapJsonFile = NativeFile:create(filename .. ".json")
 
-   local result = PropertiesEncoder:create():decode(mapPropertiesFile:read())
+   local result = JsonEncoder:create():decode(mapJsonFile:read())
    result.tiles = decodeMapTiles(mapFile:read())
    return result
 end

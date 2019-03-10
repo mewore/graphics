@@ -1,4 +1,4 @@
-require "properties-encoder"
+require "json-encoder"
 
 NativeFile = {}
 NativeFile.__index = NativeFile
@@ -61,11 +61,11 @@ function NativeFile:read()
    return contents
 end
 
---- If this is a .properties file, it can be read as a table. Currently, only single-line properties are supported.
--- @returns {string} - The properties described in the file
-function NativeFile:readAsTable()
+--- If this is a .json file, it can be read as a table.
+-- @returns {string} - The JSON described in the file
+function NativeFile:readAsJson()
    local contents = self:read()
-   return PropertiesEncoder:create():decode(contents)
+   return JsonEncoder:create():decode(contents)
 end
 
 --- Create or overwrite the file with the specified contents.
