@@ -104,7 +104,7 @@ function PaintDisplay:__drawBackSquare()
    love.graphics.draw(CHECKERBOARD, CHECKERBOARD_QUAD, self.backLeft, self.backTop)
 
    self.drawFunction(self.backLeft, self.backTop, self.back, SQUARE_SIZE, SQUARE_SIZE)
-   love.graphics.setColor(not self.hoveredBack and 1 or 0, 1, 1, 1)
+   love.graphics.setColor(not (self.hoveredBack and self.paintPicker ~= nil) and 1 or 0, 1, 1, 1)
    love.graphics.rectangle("line", self.backLeft, self.backTop, SQUARE_SIZE, SQUARE_SIZE)
 end
 
@@ -117,7 +117,7 @@ function PaintDisplay:__drawFrontSquare()
    love.graphics.draw(CHECKERBOARD, CHECKERBOARD_QUAD, self.frontLeft, self.frontTop)
 
    self.drawFunction(self.frontLeft, self.frontTop, self.front, SQUARE_SIZE, SQUARE_SIZE)
-   love.graphics.setColor(not self.hoveredFront and 1 or 0, 1, 1, 1)
+   love.graphics.setColor(not (self.hoveredFront and self.paintPicker ~= nil) and 1 or 0, 1, 1, 1)
    love.graphics.rectangle("line", self.frontLeft, self.frontTop, SQUARE_SIZE, SQUARE_SIZE)
 end
 
