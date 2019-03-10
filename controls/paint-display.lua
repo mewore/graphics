@@ -39,11 +39,10 @@ function PaintDisplay:create(initialFront, initialBack, drawFunction, paintPicke
       backRight = 0,
       backBottom = 0,
       paintPicker = paintPicker,
-      isPickingPaint = false,
    }
    setmetatable(this, self)
 
-   paintPicker.onClose = function() this.isPickingPaint = false end
+   paintPicker.onClose = function() viewStack:popView(paintPicker) end
 
    return this
 end
@@ -67,16 +66,16 @@ function PaintDisplay:update()
 
    if love.mouse.buttonsPressed[LEFT_MOUSE_BUTTON] and self.paintPicker then
       if self.hoveredFront then
-         self.isPickingPaint = true
+         viewStack:pushView(self.paintPicker)
          self.paintPicker.onPick = function(newPaint)
             self.front = newPaint
-            self.isPickingPaint = false
+            viewStack:popView(self.paintPicker)
          end
       elseif self.hoveredBack then
-         self.isPickingPaint = true
+         viewStack:pushView(self.paintPicker)
          self.paintPicker.onPick = function(newPaint)
             self.back = newPaint
-            self.isPickingPaint = false
+            viewStack:popView(self.paintPicker)
          end
       end
    end

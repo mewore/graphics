@@ -135,7 +135,11 @@ function MapEditor:create(spritesheetDirectoryPath)
             this.activeTool = this.previousTool
             this.previousTool = TOOL_IMAGE_EDITOR
             this.imageEditor = ImageEditor:create(allTilesheetFiles[tile].path)
-            this.imageEditor.onClose = function() this.imageEditor = nil end
+            viewStack:pushView(this.imageEditor)
+            this.imageEditor.onClose = function()
+               viewStack:popView(this.imageEditor)
+               this.imageEditor = nil
+            end
             this.imageEditor.onSave = function(imageData)
                spritesheets[tile] = Spritesheet:create(imageData, tileWidth, tileHeight, tileNames[tile], true)
                paintDisplayPreviews[tile] = love.graphics.newQuad(0, 0, paintDisplay.previewWidth,
@@ -154,19 +158,6 @@ end
 --- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function MapEditor:update(dt)
-   if self.tools[TOOL_POINT_EDITOR].dialog then
-      self.tools[TOOL_POINT_EDITOR].dialog:update(dt)
-      return
-   end
-   if self.imageEditor then
-      self.imageEditor:update(dt)
-      return
-   end
-   if self.paintDisplay.isPickingPaint then
-      self.paintDisplay.paintPicker:update(dt)
-      return
-   end
-
    if love.keyboard.escapeIsPressed then
       self.onClose()
    end
@@ -200,15 +191,6 @@ end
 
 --- LOVE draw handler
 function MapEditor:draw()
-   if self.imageEditor then
-      self.imageEditor:draw()
-      return
-   end
-   if self.paintDisplay.isPickingPaint then
-      self.paintDisplay.paintPicker:draw()
-      return
-   end
-
    -- Gray border
    local BORDER_VALUE = 0.7
    love.graphics.clear(BORDER_VALUE, BORDER_VALUE, BORDER_VALUE)
@@ -230,7 +212,5 @@ function MapEditor:draw()
       love.graphics.pop()
    end
 
-   if not self.tools[TOOL_POINT_EDITOR].dialog then
-      self.sidebar:draw()
-   end
+   self.sidebar:draw()
 end

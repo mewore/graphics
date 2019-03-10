@@ -39,8 +39,11 @@ function Dialog:create(title, message, controls, buttons)
       messageText = love.graphics.newText(MESSAGE_FONT, table.concat(wrappedMessage, "\n")),
       controls = controls,
       buttons = buttons,
+      isOpaque = false,
    }
    setmetatable(this, self)
+
+   viewStack:pushView(this)
 
    return this
 end

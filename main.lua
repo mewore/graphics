@@ -1,9 +1,7 @@
 require "views/map-editor"
+require "util/view-stack"
 
 local NORMAL_CURSOR = love.mouse.getSystemCursor("arrow")
-
-local mapEditor = MapEditor:create(love.filesystem.getWorkingDirectory() .. "/tilesheets")
-mapEditor.onClose = function() love.event.quit() end
 
 love.keyboard.keysPressed = {}
 love.keyboard.keysReleased = {}
@@ -94,6 +92,10 @@ function love.mouse.hasPressedInside(leftX, topY, bottomX, bottomY, buttons)
    return false
 end
 
+local mapEditor = MapEditor:create(love.filesystem.getWorkingDirectory() .. "/tilesheets")
+mapEditor.onClose = function() love.event.quit() end
+viewStack = ViewStack:create(mapEditor)
+
 --- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function love.update(dt)
@@ -105,7 +107,7 @@ function love.update(dt)
    love.keyboard.escapeIsPressed = love.keyboard.keysPressed["escape"]
    love.keyboard.returnIsPressed = love.keyboard.keysPressed["return"]
 
-   mapEditor:update(dt)
+   viewStack:update(dt)
    love.keyboard.keysPressed = {}
    love.keyboard.keysReleased = {}
    love.keyboard.input = ""
@@ -117,5 +119,5 @@ end
 --- LOVE draw handler
 function love.draw()
    love.graphics.clear(1, 1, 1, 1)
-   mapEditor:draw()
+   viewStack:draw()
 end

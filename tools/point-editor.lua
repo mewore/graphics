@@ -105,9 +105,11 @@ function PointEditor:update()
                activePoint.id = idInput.value
                activePoint.data = dataInput.value
                self.pointIdText[self.activeIndex] = love.graphics.newText(POINT_ID_FONT, activePoint.id)
+               viewStack:popView(self.dialog)
                self.dialog = nil
             end)
             local cancelButton = Button:create("Cancel", nil, function()
+               viewStack:popView(self.dialog)
                self.dialog = nil
             end)
 
@@ -157,9 +159,11 @@ function PointEditor:update()
             newPoint.data = dataInput.value
             self.points[#self.points + 1] = newPoint
             self.pointIdText[#self.pointIdText + 1] = love.graphics.newText(POINT_ID_FONT, newPoint.id)
+            viewStack:popView(self.dialog)
             self.dialog = nil
          end)
          local cancelButton = Button:create("Cancel", nil, function()
+            viewStack:popView(self.dialog)
             self.dialog = nil
          end)
 
@@ -168,6 +172,7 @@ function PointEditor:update()
       end
    elseif love.mouse.buttonsPressed[RIGHT_MOUSE_BUTTON] and self.activeIndex > -1 then
       local noButton = Button:create("No", nil, function()
+         viewStack:popView(self.dialog)
          self.dialog = nil
       end)
       local yesButton = Button:create("Yes", "danger", function()
@@ -176,6 +181,7 @@ function PointEditor:update()
          self.pointIdText[self.activeIndex] = self.pointIdText[lastIndex]
          self.points[lastIndex] = nil
          self.pointIdText[lastIndex] = nil
+         viewStack:popView(self.dialog)
          self.dialog = nil
       end)
 
@@ -230,9 +236,5 @@ function PointEditor:draw()
          setColour(self.activeIndex == index and TEXT_ACTIVE or TEXT_INACTIVE)
          love.graphics.draw(self.pointIdText[index], pointX - math.floor(self.pointIdText[index]:getWidth() / 2), topY + BOX_PADDING)
       end
-   end
-
-   if self.dialog then
-      self.dialog:draw()
    end
 end
