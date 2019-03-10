@@ -20,6 +20,7 @@ local COLUMN_WIDTH = SQUARE_SIZE + 40
 local SQUARE_TOP_OFFSET = 10
 local SQUARE_LEFT_OFFSET = math.floor((COLUMN_WIDTH - SQUARE_SIZE) / 2)
 
+local CHECKERBOARD_DARK_VALUE = 0.3
 local CHECKERBOARD = love.graphics.newImage("graphics/checkerboard-pattern-128.png")
 local CHECKERBOARD_QUAD = love.graphics.newQuad(0, 0, math.min(SQUARE_SIZE, CHECKERBOARD:getWidth()), math.min(SQUARE_SIZE, CHECKERBOARD:getHeight()), CHECKERBOARD:getDimensions())
 
@@ -99,7 +100,9 @@ function TilePicker:draw()
       end
 
       if i > 0 then
-         love.graphics.setColor(1, 1, 1, 1)
+         love.graphics.setColor(CHECKERBOARD_DARK_VALUE, CHECKERBOARD_DARK_VALUE, CHECKERBOARD_DARK_VALUE)
+         love.graphics.rectangle("fill", x + SQUARE_LEFT_OFFSET, y + SQUARE_TOP_OFFSET, SQUARE_SIZE, SQUARE_SIZE)
+         love.graphics.setColor(1, 1, 1)
          love.graphics.draw(CHECKERBOARD, CHECKERBOARD_QUAD, x + SQUARE_LEFT_OFFSET, y + SQUARE_TOP_OFFSET)
          love.graphics.draw(self.tilesheets[i].originalImage, self.tilesheetQuads[i], x + SQUARE_LEFT_OFFSET, y + SQUARE_TOP_OFFSET)
       end

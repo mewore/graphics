@@ -1,11 +1,16 @@
 PaintDisplay = {}
 PaintDisplay.__index = PaintDisplay
 
-local SQUARE_SIZE = 50
+local SQUARE_SIZE = 56
 local LEFT_MOUSE_BUTTON = 1
 local SWAP_KEY = "x"
-local SQUARE_SHADOW_SIZE = 5
+local SQUARE_SHADOW_SIZE = 2
 local SQUARE_SHADOW_OPACITY = 0.8
+
+local CHECKERBOARD_DARK_VALUE = 0.3
+local CHECKERBOARD = love.graphics.newImage("graphics/checkerboard-pattern-64.png")
+local CHECKERBOARD_QUAD = love.graphics.newQuad(0, 0, math.min(SQUARE_SIZE, CHECKERBOARD:getWidth()),
+   math.min(SQUARE_SIZE, CHECKERBOARD:getHeight()), CHECKERBOARD:getDimensions())
 
 --- A preview of the currently used "front" and "back" paint ("paint" can mean colour, tile, etc.), and allows them to
 -- be configured
@@ -42,7 +47,9 @@ function PaintDisplay:create(initialFront, initialBack, drawFunction, paintPicke
    }
    setmetatable(this, self)
 
-   paintPicker.onClose = function() viewStack:popView(paintPicker) end
+   if paintPicker then
+      paintPicker.onClose = function() viewStack:popView(paintPicker) end
+   end
 
    return this
 end
@@ -91,8 +98,12 @@ local function drawSquareShadow(fromX, fromY, toX, toY, opacityMultiplier)
 end
 
 function PaintDisplay:__drawBackSquare()
-   love.graphics.setColor(1, 1, 1, 1)
-   self.drawFunction(self.backLeft, self.backTop, self.back)
+   love.graphics.setColor(CHECKERBOARD_DARK_VALUE, CHECKERBOARD_DARK_VALUE, CHECKERBOARD_DARK_VALUE)
+   love.graphics.rectangle("fill", self.backLeft, self.backTop, SQUARE_SIZE, SQUARE_SIZE)
+   love.graphics.setColor(1, 1, 1)
+   love.graphics.draw(CHECKERBOARD, CHECKERBOARD_QUAD, self.backLeft, self.backTop)
+
+   self.drawFunction(self.backLeft, self.backTop, self.back, SQUARE_SIZE, SQUARE_SIZE)
    love.graphics.setColor(not self.hoveredBack and 1 or 0, 1, 1, 1)
    love.graphics.rectangle("line", self.backLeft, self.backTop, SQUARE_SIZE, SQUARE_SIZE)
 end
@@ -106,8 +117,12 @@ function PaintDisplay:__drawFrontSquare()
    end
    drawSquareShadow(self.backLeft, self.backTop, self.frontRight + SQUARE_SHADOW_SIZE, self.frontBottom + SQUARE_SHADOW_SIZE, shadowOpacity)
 
-   love.graphics.setColor(1, 1, 1, 1)
-   self.drawFunction(self.frontLeft, self.frontTop, self.front)
+   love.graphics.setColor(CHECKERBOARD_DARK_VALUE, CHECKERBOARD_DARK_VALUE, CHECKERBOARD_DARK_VALUE)
+   love.graphics.rectangle("fill", self.frontLeft, self.frontTop, SQUARE_SIZE, SQUARE_SIZE)
+   love.graphics.setColor(1, 1, 1)
+   love.graphics.draw(CHECKERBOARD, CHECKERBOARD_QUAD, self.frontLeft, self.frontTop)
+
+   self.drawFunction(self.frontLeft, self.frontTop, self.front, SQUARE_SIZE, SQUARE_SIZE)
    love.graphics.setColor(not self.hoveredFront and 1 or 0, 1, 1, 1)
    love.graphics.rectangle("line", self.frontLeft, self.frontTop, SQUARE_SIZE, SQUARE_SIZE)
 end

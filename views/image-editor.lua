@@ -18,6 +18,9 @@ local BORDER_VALUE = 0.7
 local CHECKERBOARD_SIZE = 8
 local CHECKERBOARD_VALUE = 0.8
 
+local TOOL_PIXEL_EDITOR = 1
+local TOOL_PIPETTE = 2
+
 --- Displays a map and allows the user to edit it
 -- @param filename {string} - The path to the file that should be edited
 function ImageEditor:create(filename)
@@ -30,31 +33,37 @@ function ImageEditor:create(filename)
    local mainColour = { r = 0, g = 0, b = 0, a = 1 }
    local secondaryColour = { r = 0, g = 0, b = 0, a = 1 }
 
+   local paintDisplay = PaintDisplay:create(mainColour, secondaryColour, function(x, y, colour, width, height)
+      love.graphics.setColor(colour.r, colour.g, colour.b, colour.a)
+      love.graphics.rectangle("fill", x, y, width, height)
+   end, nil)
+
    local navigator = Navigator:create(width * TILE_WIDTH, height * TILE_HEIGHT)
    local this = {
       filename = filename,
       imageData = imageData,
       imageWidth = width,
       imageHeight = height,
-      drawControls = TileControls:create(WHITE, TILE_WIDTH, TILE_HEIGHT, width, height, navigator, false),
-      filePickerControls = TileControls:create(WHITE, TILE_WIDTH, TILE_HEIGHT, width, height, navigator, false),
-      isPickingColour = false,
+      activeTool = TOOL_PIXEL_EDITOR,
+      tools = {
+         [TOOL_PIXEL_EDITOR] = TileControls:create(WHITE, TILE_WIDTH, TILE_HEIGHT, width, height, navigator, false),
+         [TOOL_PIPETTE] = TileControls:create(WHITE, TILE_WIDTH, TILE_HEIGHT, width, height, navigator, false),
+      },
       navigator = navigator,
-      mainColour = mainColour,
-      secondaryColour = secondaryColour,
+      sidebar = Sidebar:create({ paintDisplay }),
       onSave = function() end,
    }
    setmetatable(this, self)
 
-   this.drawControls:onDrawProgress(function(points, button)
-      local colour = button == LEFT_MOUSE_BUTTON and this.mainColour or this.secondaryColour
+   this.tools[TOOL_PIXEL_EDITOR]:onDrawProgress(function(points, button)
+      local colour = button == LEFT_MOUSE_BUTTON and paintDisplay.front or paintDisplay.back
       for i = 1, #points do
          this.imageData:setPixel(points[i].x - 1, points[i].y - 1, colour.r, colour.g, colour.b, colour.a)
       end
    end)
-   this.filePickerControls:onDrawProgress(function(points, button)
+   this.tools[TOOL_PIPETTE]:onDrawProgress(function(points, button)
       if points and #points >= 1 then
-         local colour = button == LEFT_MOUSE_BUTTON and this.mainColour or this.secondaryColour
+         local colour = button == LEFT_MOUSE_BUTTON and paintDisplay.front or paintDisplay.back
          colour.r, colour.g, colour.b, colour.a = this.imageData:getPixel(points[1].x - 1, points[1].y - 1)
       end
    end)
@@ -76,16 +85,19 @@ function ImageEditor:update(dt)
          file:write(fileData:getString())
          self.onSave(self.imageData)
       end
-      if not self.isPickingColour then
-         self.drawControls:zoom(love.mouse.wheel.dy)
+      if self.activeTool == TOOL_PIXEL_EDITOR then
+         self.tools[TOOL_PIXEL_EDITOR]:zoom(love.mouse.wheel.dy)
       end
    end
 
-   self.isPickingColour = love.keyboard.altIsDown
+   self.activeTool = love.keyboard.altIsDown and TOOL_PIPETTE or TOOL_PIXEL_EDITOR
 
+   self.tools[self.activeTool].isSidebarHovered = self.sidebar:isHovered()
+   self.sidebar.isOpaque = self.sidebar:isHovered() and self.tools[self.activeTool].drawingWith == nil
+
+   self.tools[self.activeTool]:update(dt)
    self.navigator:update(dt)
-   local activeControls = self.isPickingColour and self.filePickerControls or self.drawControls
-   activeControls:update()
+   self.sidebar:update(dt)
 end
 
 local function getPixelLightness(imageData, x, y)
@@ -151,14 +163,16 @@ function ImageEditor:draw()
       end
    end
    -- The tile cursor
-   local activeControls = self.isPickingColour and self.filePickerControls or self.drawControls
-   if getPixelLightness(self.imageData, activeControls.leftHoveredColumn, activeControls.topHoveredRow) > 0.5 then
-      activeControls.colour = BLACK
+   local activeTool = self.tools[self.activeTool]
+   if getPixelLightness(self.imageData, activeTool.leftHoveredColumn, activeTool.topHoveredRow) > 0.5 then
+      activeTool.colour = BLACK
    else
-      activeControls.colour = WHITE
+      activeTool.colour = WHITE
    end
-   activeControls:draw()
+   activeTool:draw()
 
    love.graphics.reset()
    love.graphics.pop()
+
+   self.sidebar:draw()
 end
