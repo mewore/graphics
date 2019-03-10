@@ -1,12 +1,12 @@
-require "tools/tile-controls"
-require "data/map-encoder"
-require "navigator"
-require "views/image-editor"
-require "controls/sidebar"
 require "controls/paint-display"
+require "controls/sidebar"
 require "controls/tile-picker"
+require "data/map-encoder"
 require "data/spritesheet"
+require "navigator"
 require "tools/point-editor"
+require "tools/tile-controls"
+require "views/image-editor"
 
 MapEditor = {}
 MapEditor.__index = MapEditor
