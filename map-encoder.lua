@@ -17,7 +17,7 @@ end
 local function encodeMapTiles(tiles)
    local tileArray = {}
    for index, value in ipairs(tiles) do
-      tileArray[index] = string.char(127 - value)
+      tileArray[index] = string.char(value)
    end
    return table.concat(tileArray, "")
 end
@@ -47,7 +47,7 @@ local function decodeMapTiles(rawTiles)
    local tiles = {}
    local length = string.len(rawTiles)
    for index = 1, length do
-      tiles[index] = 127 - string.byte(rawTiles, index)
+      tiles[index] = string.byte(rawTiles, index)
    end
    return tiles
 end
