@@ -8,7 +8,7 @@ local TABLE_CLOSE = "}"
 local ARRAY_OPEN = "["
 local ARRAY_CLOSE = "]"
 
---- Reads/writes .properties files
+--- Reads/writes .json files
 function JsonEncoder:create()
    local this = {}
    setmetatable(this, self)
