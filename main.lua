@@ -1,4 +1,4 @@
-require "map-editor"
+require "views/map-editor"
 
 local NORMAL_CURSOR = love.mouse.getSystemCursor("arrow")
 

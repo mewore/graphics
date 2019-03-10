@@ -1,7 +1,7 @@
 require "tools/tile-controls"
 require "data/map-encoder"
 require "navigator"
-require "image-editor"
+require "views/image-editor"
 require "controls/sidebar"
 require "controls/paint-display"
 require "controls/tile-picker"
