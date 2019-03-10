@@ -2,7 +2,7 @@ require "tile-controls"
 require "map-encoder"
 require "navigator"
 require "image-editor"
-require "draw-overlay"
+require "sidebar"
 require "controls/paint-display"
 require "tile-picker"
 require "spritesheet"
@@ -127,7 +127,7 @@ function MapEditor:create(spritesheetDirectoryPath)
          [TOOL_POINT_EDITOR] = PointEditor:create(navigator),
       },
       imageEditor = nil,
-      drawOverlay = DrawOverlay:create({ paintDisplay }),
+      sidebar = Sidebar:create({ paintDisplay }),
       tileControlsAreDisabled = false,
       paintDisplay = paintDisplay,
       onClose = function() end,
@@ -212,8 +212,8 @@ function MapEditor:update(dt)
       end
    end
 
-   self.tools[self.activeTool].isOverlayHovered = self.drawOverlay:isHovered()
-   self.drawOverlay.isOpaque = self.drawOverlay:isHovered() and self.tools[self.activeTool].drawingWith == nil
+   self.tools[self.activeTool].isSidebarHovered = self.sidebar:isHovered()
+   self.sidebar.isOpaque = self.sidebar:isHovered() and self.tools[self.activeTool].drawingWith == nil
 
    if love.keyboard.controlIsDown or love.keyboard.commandIsDown then
       if love.keyboard.keysPressed[SAVE_BUTTON] then
@@ -233,14 +233,14 @@ function MapEditor:update(dt)
          self.tools[TOOL_POINT_EDITOR]:setPoints(data.points)
          self:recreateSpriteBatches()
       end
-      if not self.drawOverlay.isOpaque and self.activeTool == TOOL_MAP_EDITOR then
+      if not self.sidebar.isOpaque and self.activeTool == TOOL_MAP_EDITOR then
          self.tools[TOOL_MAP_EDITOR]:zoom(love.mouse.wheel.dy)
       end
    end
 
    self.tools[self.activeTool]:update(dt)
    self.navigator:update(dt)
-   self.drawOverlay:update(dt)
+   self.sidebar:update(dt)
 end
 
 --- Gets the tile from a specified cell
@@ -347,6 +347,6 @@ function MapEditor:draw()
    end
 
    if not self.tools[TOOL_POINT_EDITOR].dialog then
-      self.drawOverlay:draw()
+      self.sidebar:draw()
    end
 end

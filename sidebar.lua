@@ -1,5 +1,5 @@
-DrawOverlay = {}
-DrawOverlay.__index = DrawOverlay
+Sidebar = {}
+Sidebar.__index = Sidebar
 
 local WIDTH = 100
 local BACKGROUND_OPACITY = 0.9
@@ -9,7 +9,7 @@ local OPACITY_DIFFERENCE_HALVING_PERIOD = 0.1 -- How long until the opacity reac
 local PADDING_TOP = 10
 
 --- A controller that keeps track of an X and Y offset as well as a zoom ratio
-function DrawOverlay:create(controls)
+function Sidebar:create(controls)
    local y = PADDING_TOP
    for i = 1, #controls do
       controls[i].y = y
@@ -27,13 +27,13 @@ function DrawOverlay:create(controls)
    return this
 end
 
-function DrawOverlay:isHovered()
+function Sidebar:isHovered()
    return love.mouse.getX() < WIDTH
 end
 
 --- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
-function DrawOverlay:update(dt)
+function Sidebar:update(dt)
    for i = 1, #self.controls do
       self.controls[i]:update(dt)
    end
@@ -46,7 +46,7 @@ function DrawOverlay:update(dt)
 end
 
 --- LOVE draw handler
-function DrawOverlay:draw()
+function Sidebar:draw()
    love.graphics.setColor(VALUE, VALUE, VALUE, self.opacity)
    love.graphics.rectangle("fill", 0, 0, WIDTH, love.graphics.getHeight())
    love.graphics.reset()

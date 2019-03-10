@@ -47,7 +47,7 @@ function PointEditor:create(navigator)
       pointDragInfo = nil,
       isDragging = false,
       hasBeenDragged = false,
-      isOverlayHovered = false,
+      isSidebarHovered = false,
    }
    setmetatable(this, self)
 
@@ -75,7 +75,7 @@ end
 --- LOVE update handler
 function PointEditor:update()
    local pointDragInfo = self.pointDragInfo
-   if self.isOverlayHovered and not pointDragInfo then
+   if self.isSidebarHovered and not pointDragInfo then
       self.activeIndex = -1
       return
    end

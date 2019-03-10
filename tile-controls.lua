@@ -30,7 +30,7 @@ function TileControls:create(colour, tileWidth, tileHeight, canvasWidth, canvasH
       singular = singular,
       drawingWith = nil,
       visible = true,
-      isOverlayHovered = false,
+      isSidebarHovered = false,
    }
    setmetatable(this, self)
 
@@ -196,7 +196,7 @@ end
 
 --- LOVE update handler
 function TileControls:update()
-   self.invisible = self.drawingWith == nil and self.isOverlayHovered
+   self.invisible = self.drawingWith == nil and self.isSidebarHovered
    if self.invisible then
       return
    end
