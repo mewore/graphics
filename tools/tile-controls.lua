@@ -3,6 +3,9 @@ require "util/math-utils"
 TileControls = {}
 TileControls.__index = TileControls
 
+local LEFT_MOUSE_BUTTON = 1
+local RIGHT_MOUSE_BUTTON = 2
+
 local mathUtils = MathUtils:create()
 
 --- Tile controls allow the user to provide tile-based input (i.e. clicking in a grid). Basically a pencil.
@@ -29,8 +32,7 @@ function TileControls:create(colour, tileWidth, tileHeight, canvasWidth, canvasH
       size = 1,
       singular = singular,
       drawingWith = nil,
-      visible = true,
-      isSidebarHovered = false,
+      invisible = true,
    }
    setmetatable(this, self)
 
@@ -196,7 +198,8 @@ end
 
 --- LOVE update handler
 function TileControls:update()
-   self.invisible = self.drawingWith == nil and self.isSidebarHovered
+   local mouseInfo = love.mouse.registerSolid(self, { isWholeScreen = true })
+   self.invisible = not mouseInfo.isHovered
    if self.invisible then
       return
    end
@@ -206,47 +209,29 @@ function TileControls:update()
    self.leftHoveredColumn = math.floor(mouseAbsoluteX / self.tileWidth - offset) + 1
    self.topHoveredRow = math.floor(mouseAbsoluteY / self.tileHeight - offset) + 1
 
-   local drawingWith
-   for mouseButton = 1, 2 do
-      if love.mouse.buttonsPressed[mouseButton] then
-         if self.singular then
-            self.drawProgressHandler(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
-               self.canvasWidth, self.canvasHeight), mouseButton)
-            return
-         end
-         drawingWith = mouseButton
-         break
+   if mouseInfo.drag and (mouseInfo.drag.button == LEFT_MOUSE_BUTTON
+         or mouseInfo.drag.button == RIGHT_MOUSE_BUTTON) then
+      self.drawingWith = mouseInfo.drag.button
+
+      if mouseInfo.dragStarted or self.lastMouseDownPosition == nil then
+         self.drawProgressHandler(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
+            self.canvasWidth, self.canvasHeight), self.drawingWith)
+      elseif not self.singular and (self.leftHoveredColumn ~= self.lastMouseDownPosition.x
+            or self.topHoveredRow ~= self.lastMouseDownPosition.y) then
+
+         local drawPath = mathUtils:getDiscreteLine(self.lastMouseDownPosition.x, self.lastMouseDownPosition.y,
+            self.leftHoveredColumn, self.topHoveredRow)
+         callForEachPointInPath(function(points) self.drawProgressHandler(points, self.drawingWith) end,
+            self.lastMouseDownPosition.x, self.lastMouseDownPosition.y, self.size, drawPath,
+            self.canvasWidth, self.canvasHeight)
       end
-   end
-   if drawingWith == nil and self.drawingWith ~= nil and love.mouse.isDown(self.drawingWith) then
-      drawingWith = self.drawingWith
-   end
 
-   if drawingWith == nil then
-      self.lastMouseDownPosition = nil
+      self.drawDoneHandler()
+      self.lastMouseDownPosition = { x = self.leftHoveredColumn, y = self.topHoveredRow }
+   else
       self.drawingWith = nil
-      return
-   end
-
-   if drawingWith ~= self.drawingWith then
       self.lastMouseDownPosition = nil
    end
-   self.drawingWith = drawingWith
-
-   if self.lastMouseDownPosition == nil then
-      self.drawProgressHandler(getCanvasCirclePoints(self.leftHoveredColumn, self.topHoveredRow, self.size,
-         self.canvasWidth, self.canvasHeight), drawingWith)
-   elseif self.leftHoveredColumn ~= self.lastMouseDownPosition.x
-         or self.topHoveredRow ~= self.lastMouseDownPosition.y then
-      local drawPath = mathUtils:getDiscreteLine(self.lastMouseDownPosition.x, self.lastMouseDownPosition.y,
-         self.leftHoveredColumn, self.topHoveredRow)
-      callForEachPointInPath(function(points) self.drawProgressHandler(points, drawingWith) end,
-         self.lastMouseDownPosition.x, self.lastMouseDownPosition.y, self.size, drawPath,
-         self.canvasWidth, self.canvasHeight)
-   end
-
-   self.drawDoneHandler()
-   self.lastMouseDownPosition = { x = self.leftHoveredColumn, y = self.topHoveredRow }
 end
 
 --- LOVE draw handler

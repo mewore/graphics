@@ -56,14 +56,14 @@ function ImageEditor:create(filename)
    setmetatable(this, self)
 
    this.tools[TOOL_PIXEL_EDITOR]:onDrawProgress(function(points, button)
-      local colour = button == LEFT_MOUSE_BUTTON and paintDisplay.front or paintDisplay.back
+      local colour = button == LEFT_MOUSE_BUTTON and paintDisplay.front.value or paintDisplay.back.value
       for i = 1, #points do
          this.imageData:setPixel(points[i].x - 1, points[i].y - 1, colour.r, colour.g, colour.b, colour.a)
       end
    end)
    this.tools[TOOL_PIPETTE]:onDrawProgress(function(points, button)
       if points and #points >= 1 then
-         local colour = button == LEFT_MOUSE_BUTTON and paintDisplay.front or paintDisplay.back
+         local colour = button == LEFT_MOUSE_BUTTON and paintDisplay.front.value or paintDisplay.back.value
          colour.r, colour.g, colour.b, colour.a = this.imageData:getPixel(points[1].x - 1, points[1].y - 1)
       end
    end)
@@ -91,13 +91,11 @@ function ImageEditor:update(dt)
    end
 
    self.activeTool = love.keyboard.altIsDown and TOOL_PIPETTE or TOOL_PIXEL_EDITOR
+   self.sidebar.isActive = self.tools[self.activeTool].drawingWith == nil
 
-   self.tools[self.activeTool].isSidebarHovered = self.sidebar:isHovered()
-   self.sidebar.isOpaque = self.sidebar:isHovered() and self.tools[self.activeTool].drawingWith == nil
-
+   self.sidebar:update(dt)
    self.tools[self.activeTool]:update(dt)
    self.navigator:update(dt)
-   self.sidebar:update(dt)
 end
 
 local function getPixelLightness(imageData, x, y)

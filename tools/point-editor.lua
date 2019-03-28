@@ -30,7 +30,7 @@ local POINT_CREATION_CURSOR = love.mouse.getSystemCursor("crosshair")
 local LEFT_MOUSE_BUTTON = 1
 local RIGHT_MOUSE_BUTTON = 2
 
-local DRAG_START_DISTANCE = 10 -- [px]
+local DRAG_START_DISTANCE = 5 -- [px]
 local DRAG_START_DISTANCE_SQUARED = DRAG_START_DISTANCE * DRAG_START_DISTANCE -- [px ^ 2]
 local ACTIVATION_DISTANCE = POINT_RADIUS -- [px]
 local ACTIVATION_DISTANCE_SQUARED = ACTIVATION_DISTANCE * ACTIVATION_DISTANCE -- [px ^ 2]
@@ -74,78 +74,93 @@ end
 
 --- LOVE update handler
 function PointEditor:update()
-   local pointDragInfo = self.pointDragInfo
-   if self.isSidebarHovered and not pointDragInfo then
+   local mouseInfo = love.mouse.registerSolid(self, { isWholeScreen = true })
+   if not mouseInfo.isHovered then
       self.activeIndex = -1
       return
    end
-   local mouseX, mouseY = love.mouse.getPosition()
 
-   if pointDragInfo then
-      self.isDragging = getSquaredDistance(pointDragInfo.startX, pointDragInfo.startY, mouseX, mouseY) >
-            DRAG_START_DISTANCE_SQUARED
-      self.hasBeenDragged = self.hasBeenDragged or self.isDragging
-      if not love.mouse.isDown(LEFT_MOUSE_BUTTON) then
+   if mouseInfo.dragStarted and self.activeIndex > -1 then
+      local mouseAbsoluteX, mouseAbsoluteY = self.navigator:screenToAbsolute(mouseInfo.drag.fromX, mouseInfo.drag.fromY)
+      self.pointDragInfo = {
+         startAbsoluteX = mouseAbsoluteX,
+         startAbsoluteY = mouseAbsoluteY,
+      }
+   end
+
+   if mouseInfo.drag then
+      if mouseInfo.drag.button == LEFT_MOUSE_BUTTON then
+         if self.activeIndex > -1 then
+            self.isDragging = mouseInfo.drag.maxSquaredDistance > DRAG_START_DISTANCE_SQUARED
+            love.mouse.importantCursor = self.isDragging and POINT_DRAG_CURSOR or POINT_SELECTION_CURSOR
+         else
+            love.mouse.importantCursor = POINT_CREATION_CURSOR
+         end
+      elseif mouseInfo.drag.button == RIGHT_MOUSE_BUTTON and self.activeIndex > -1 then
+         local mouseX, mouseY = love.mouse.getPosition()
+         local pointX, pointY = self.navigator:absoluteToScreen(self.points[self.activeIndex].x, self.points[self.activeIndex].y)
+         local distance = getSquaredDistance(mouseX, mouseY, pointX, pointY)
+         love.mouse.importantCursor = (distance < ACTIVATION_DISTANCE_SQUARED) and POINT_SELECTION_CURSOR or nil
+      end
+   end
+
+   if mouseInfo.dragConfirmed then
+      local mouseAbsoluteX, mouseAbsoluteY = self.navigator:screenToAbsolute(love.mouse.getPosition())
+      print(self.activeIndex, self.isDragging)
+      if self.activeIndex > -1 then
          local activePoint = self.points[self.activeIndex]
          if self.isDragging then
-            local mouseAbsoluteX, mouseAbsoluteY = self.navigator:screenToAbsolute(mouseX, mouseY)
-            local dx, dy = mouseAbsoluteX - pointDragInfo.startAbsoluteX, mouseAbsoluteY - pointDragInfo.startAbsoluteY
+            -- Move the active point to the current absolute mouse position
+            local dx, dy = mouseAbsoluteX - self.pointDragInfo.startAbsoluteX, mouseAbsoluteY - self.pointDragInfo.startAbsoluteY
             activePoint.x, activePoint.y = activePoint.x + dx, activePoint.y + dy
             self.pointDragInfo = nil
-            self.isDragging = false
          else
-            self.pointDragInfo = nil
-            if self.hasBeenDragged then
-               self.hasBeenDragged = false
-               return
+            if mouseInfo.dragConfirmed.button == LEFT_MOUSE_BUTTON then
+               -- Edit the active point
+               self.pointDragInfo = nil
+               local idInput = TextInput:create(300, "ID", activePoint.id)
+               local dataInput = TextInput:create(300, "Data (optional)", activePoint.data)
+               local okButton = Button:create("OK", "solid", function()
+                  activePoint.id = idInput.value
+                  activePoint.data = dataInput.value
+                  self.pointIdText[self.activeIndex] = love.graphics.newText(POINT_ID_FONT, activePoint.id)
+                  viewStack:popView(self.dialog)
+                  self.dialog = nil
+               end)
+               local cancelButton = Button:create("Cancel", nil, function()
+                  viewStack:popView(self.dialog)
+                  self.dialog = nil
+               end)
+
+               self.dialog = Dialog:create("Edit point", "What should the ID and info of the point be?",
+                  { idInput, dataInput }, { cancelButton, okButton })
+            elseif mouseInfo.dragConfirmed.button == RIGHT_MOUSE_BUTTON then
+               local mouseX, mouseY = love.mouse.getPosition()
+               local pointX, pointY = self.navigator:absoluteToScreen(activePoint.x, activePoint.y)
+               local distance = getSquaredDistance(mouseX, mouseY, pointX, pointY)
+               if distance < ACTIVATION_DISTANCE_SQUARED then
+                  -- Remove the active point
+                  local noButton = Button:create("No", nil, function()
+                     viewStack:popView(self.dialog)
+                     self.dialog = nil
+                  end)
+                  local yesButton = Button:create("Yes", "danger", function()
+                     local lastIndex = #self.points
+                     self.points[self.activeIndex] = self.points[lastIndex]
+                     self.pointIdText[self.activeIndex] = self.pointIdText[lastIndex]
+                     self.points[lastIndex] = nil
+                     self.pointIdText[lastIndex] = nil
+                     viewStack:popView(self.dialog)
+                     self.dialog = nil
+                  end)
+
+                  self.dialog = Dialog:create("Delete point", "Are you sure you would like to delete point '" ..
+                        self.points[self.activeIndex].id .. "'?", {}, { noButton, yesButton })
+               end
             end
-            local idInput = TextInput:create(300, "ID", activePoint.id)
-            local dataInput = TextInput:create(300, "Data (optional)", activePoint.data)
-            local okButton = Button:create("OK", "solid", function()
-               activePoint.id = idInput.value
-               activePoint.data = dataInput.value
-               self.pointIdText[self.activeIndex] = love.graphics.newText(POINT_ID_FONT, activePoint.id)
-               viewStack:popView(self.dialog)
-               self.dialog = nil
-            end)
-            local cancelButton = Button:create("Cancel", nil, function()
-               viewStack:popView(self.dialog)
-               self.dialog = nil
-            end)
-
-            self.dialog = Dialog:create("Edit point", "What should the ID and info of the point be?",
-               { idInput, dataInput }, { cancelButton, okButton })
-            return
          end
-      else
-         love.mouse.cursor = self.hasBeenDragged and POINT_DRAG_CURSOR or POINT_SELECTION_CURSOR
-         return
-      end
-   end
-   self.hasBeenDragged = false
-
-   local bestDistance = ACTIVATION_DISTANCE_SQUARED
-   self.activeIndex = -1
-   for index, point in ipairs(self.points) do
-      local pointX, pointY = self.navigator:absoluteToScreen(point.x, point.y)
-      local distance = getSquaredDistance(mouseX, mouseY, pointX, pointY)
-      if distance < bestDistance then
-         self.activeIndex = index
-         bestDistance = distance
-      end
-   end
-   love.mouse.cursor = self.activeIndex > -1 and POINT_SELECTION_CURSOR or POINT_CREATION_CURSOR
-
-   if love.mouse.buttonsPressed[LEFT_MOUSE_BUTTON] then
-      local mouseAbsoluteX, mouseAbsoluteY = self.navigator:screenToAbsolute(mouseX, mouseY)
-      if self.activeIndex > -1 then
-         self.pointDragInfo = {
-            startX = mouseX,
-            startY = mouseY,
-            startAbsoluteX = mouseAbsoluteX,
-            startAbsoluteY = mouseAbsoluteY,
-         }
-      else
+      elseif mouseInfo.dragConfirmed.button == LEFT_MOUSE_BUTTON then
+         -- Create point at the current absolute mouse position
          local newPoint = {
             x = mouseAbsoluteX,
             y = mouseAbsoluteY,
@@ -170,24 +185,24 @@ function PointEditor:update()
          self.dialog = Dialog:create("Create point", "What should the ID and info of the point be?",
             { idInput, dataInput }, { cancelButton, okButton })
       end
-   elseif love.mouse.buttonsPressed[RIGHT_MOUSE_BUTTON] and self.activeIndex > -1 then
-      local noButton = Button:create("No", nil, function()
-         viewStack:popView(self.dialog)
-         self.dialog = nil
-      end)
-      local yesButton = Button:create("Yes", "danger", function()
-         local lastIndex = #self.points
-         self.points[self.activeIndex] = self.points[lastIndex]
-         self.pointIdText[self.activeIndex] = self.pointIdText[lastIndex]
-         self.points[lastIndex] = nil
-         self.pointIdText[lastIndex] = nil
-         viewStack:popView(self.dialog)
-         self.dialog = nil
-      end)
-
-      self.dialog = Dialog:create("Delete point", "Are you sure you would like to delete point '" ..
-            self.points[self.activeIndex].id .. "'?", {}, { noButton, yesButton })
    end
+
+   if not mouseInfo.drag then
+      local mouseX, mouseY = love.mouse.getPosition()
+      local bestDistance = ACTIVATION_DISTANCE_SQUARED
+      self.activeIndex = -1
+      for index, point in ipairs(self.points) do
+         local pointX, pointY = self.navigator:absoluteToScreen(point.x, point.y)
+         local distance = getSquaredDistance(mouseX, mouseY, pointX, pointY)
+         if distance < bestDistance then
+            self.activeIndex = index
+            bestDistance = distance
+         end
+      end
+      love.mouse.cursor = self.activeIndex > -1 and POINT_SELECTION_CURSOR or POINT_CREATION_CURSOR
+   end
+
+   self.isDragging = self.isDragging and mouseInfo.drag ~= nil
 end
 
 local function setColour(colour)

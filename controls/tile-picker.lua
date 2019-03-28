@@ -46,6 +46,7 @@ function TilePicker:create(tilesheets, tileNames)
          return love.graphics.newQuad(0, 0, math.min(width, SQUARE_SIZE), math.min(height, SQUARE_SIZE), width, height)
       end),
       hoveredTile = nil,
+      hoveredTileOnDragStart = nil,
       onPick = function() end,
       onClose = function() end,
       tileNameTexts = tileNameTexts,
@@ -64,21 +65,27 @@ function TilePicker:update()
    local mouseX = love.mouse.getX()
    local mouseY = love.mouse.getY()
    local LIMIT_RIGHT = love.graphics.getWidth() - PADDING_SIDES
-   if mouseX < PADDING_SIDES or mouseY < PADDING_TOP or mouseX > LIMIT_RIGHT then
-      self.hoveredTile = nil
-      return
-   end
 
    local columnsPerRow = math.floor((love.graphics.getWidth() - 2 * PADDING_SIDES) / COLUMN_WIDTH)
    local column = math.floor((mouseX - PADDING_SIDES) / COLUMN_WIDTH)
    local row = math.floor((mouseY - PADDING_TOP) / ROW_HEIGHT)
 
-   self.hoveredTile = row * columnsPerRow + column
-   if self.hoveredTile < 0 or self.hoveredTile > #self.tilesheets then
+   if mouseX < PADDING_SIDES or mouseY < PADDING_TOP or mouseX > LIMIT_RIGHT then
       self.hoveredTile = nil
+   else
+      self.hoveredTile = row * columnsPerRow + column
+      if self.hoveredTile < 0 or self.hoveredTile > #self.tilesheets then
+         self.hoveredTile = nil
+      end
    end
 
-   if love.mouse.buttonsPressed[LEFT_MOUSE_BUTTON] and self.hoveredTile ~= nil then
+   local mouseInfo = love.mouse.registerSolid(self, { isWholeScreen = true })
+   if mouseInfo.dragStarted and mouseInfo.dragStarted.button == LEFT_MOUSE_BUTTON then
+      self.hoveredTileOnDragStart = self.hoveredTile
+   end
+
+   if mouseInfo.dragConfirmed and mouseInfo.dragConfirmed.button == LEFT_MOUSE_BUTTON
+         and self.hoveredTileOnDragStart == self.hoveredTile and self.hoveredTile ~= nil then
       self.onPick(self.hoveredTile)
    end
 end

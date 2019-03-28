@@ -113,7 +113,7 @@ function MapEditor:create(spritesheetDirectoryPath)
    setmetatable(this, self)
 
    this.tools[TOOL_MAP_EDITOR]:onDrawProgress(function(points, button)
-      local tileToCreate = (button == LEFT_MOUSE_BUTTON) and paintDisplay.front or paintDisplay.back
+      local tileToCreate = (button == LEFT_MOUSE_BUTTON) and paintDisplay.front.value or paintDisplay.back.value
       for _, point in pairs(points) do
          if this.map:getTile(point.x, point.y) ~= tileToCreate then
             this.map:setTile(point.x, point.y, tileToCreate)
@@ -169,8 +169,7 @@ function MapEditor:update(dt)
       end
    end
 
-   self.tools[self.activeTool].isSidebarHovered = self.sidebar:isHovered()
-   self.sidebar.isOpaque = self.sidebar:isHovered() and self.tools[self.activeTool].drawingWith == nil
+   self.sidebar.isActive = self.tools[self.activeTool].drawingWith == nil
 
    if love.keyboard.controlIsDown or love.keyboard.commandIsDown then
       if love.keyboard.keysPressed[SAVE_BUTTON] then
@@ -184,9 +183,9 @@ function MapEditor:update(dt)
       end
    end
 
+   self.sidebar:update(dt)
    self.tools[self.activeTool]:update(dt)
    self.navigator:update(dt)
-   self.sidebar:update(dt)
 end
 
 --- LOVE draw handler

@@ -65,12 +65,12 @@ end
 
 --- LOVE update handler
 function Button:update()
-   if love.mouse.hasPressedInsideObject(self) then
-      self.onClick()
-   end
-
-   if love.mouse.isInsideObject(self) then
+   local mouseInfo = love.mouse.registerSolid(self)
+   if mouseInfo.isHovered then
       love.mouse.cursor = HOVER_CURSOR
+      if mouseInfo.dragConfirmed then
+         self.onClick()
+      end
    end
 end
 

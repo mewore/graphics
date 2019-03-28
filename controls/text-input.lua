@@ -35,6 +35,7 @@ function TextInput:create(width, placeholder, initialValue)
       placeholderText = placeholder and love.graphics.newText(TEXT_FONT, placeholder) or nil,
       focusedSince = nil,
       valid = true,
+      isHovered = false,
    }
    setmetatable(this, self)
    this.text = love.graphics.newText(TEXT_FONT, this.value)
@@ -44,13 +45,13 @@ end
 
 --- LOVE update handler
 function TextInput:update()
-   if love.mouse.hasPressedInsideObject(self) then
-      self.focusedSince = love.timer.getTime()
-   elseif love.mouse.buttonsPressed[1] or love.mouse.buttonsPressed[2] then
-      self.focusedSince = nil
+   local mouseInfo = love.mouse.registerSolid(self)
+
+   if mouseInfo.clicksPerButton[1] or mouseInfo.clicksPerButton[2] then
+      love.keyboard.focus(self)
    end
 
-   if self.focusedSince ~= nil then
+   if love.keyboard.focusedOnto == self then
       if #love.keyboard.input > 0 then
          self.value = self.value .. love.keyboard.input
          self.text = love.graphics.newText(TEXT_FONT, self.value)
@@ -61,7 +62,8 @@ function TextInput:update()
       end
    end
 
-   if love.mouse.isInsideObject(self) then
+   self.isHovered = mouseInfo.isHovered
+   if self.isHovered then
       love.mouse.cursor = HOVER_CURSOR
    end
 end
@@ -76,7 +78,7 @@ end
 
 --- LOVE draw handler
 function TextInput:draw()
-   if self.focusedSince == nil and not love.mouse.isInsideObject(self) then
+   if love.keyboard.focusedOnto ~= self and not self.isHovered then
       setColour(BOX_NOT_FOCUSED_OR_HOVER_FILL_COLOUR)
       love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, BORDER_RADIUS, BORDER_RADIUS)
    end
@@ -89,7 +91,8 @@ function TextInput:draw()
       love.graphics.draw(self.placeholderText, self.x + TEXT_PADDING_LEFT, self.y + TEXT_PADDING_TOP)
    end
 
-   if self.focusedSince ~= nil and math.floor((love.timer.getTime() - self.focusedSince) / BLINKER_INTERVAL) % 2 == 0 then
+   if love.keyboard.focusedOnto == self and
+         math.floor((love.timer.getTime() - love.keyboard.focusedSince) / BLINKER_INTERVAL) % 2 == 0 then
       setColour(TEXT_COLOUR)
       local x = self.x + TEXT_PADDING_LEFT + (self.text ~= nil and self.text:getWidth() or 0)
       local topY = self.y + TEXT_PADDING_TOP
