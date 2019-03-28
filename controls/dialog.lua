@@ -53,7 +53,7 @@ function Dialog:create(title, message, controls, buttons)
 
    this.height = this.height + MARGIN_PER_ELEMENT + FOOTER_PADDING_TOP + buttons[1].height +
          math.floor(buttons[1].height / 3)
-   this:reposition()
+   this:repositionIfNecessary()
 
    viewStack:pushView(this)
 
