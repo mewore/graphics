@@ -40,8 +40,20 @@ function Dialog:create(title, message, controls, buttons)
       controls = controls,
       buttons = buttons,
       isOpaque = false,
+      lastScreenWidth = nil,
+      lastScreenHeight = nil,
    }
    setmetatable(this, self)
+
+   this.height = TITLE_HEIGHT + MARGIN_PER_ELEMENT + this.messageText:getHeight()
+
+   for i = 1, #controls do
+      this.height = this.height + MARGIN_PER_ELEMENT + controls[i].height
+   end
+
+   this.height = this.height + MARGIN_PER_ELEMENT + FOOTER_PADDING_TOP + buttons[1].height +
+         math.floor(buttons[1].height / 3)
+   this:reposition()
 
    viewStack:pushView(this)
 
@@ -53,37 +65,55 @@ function Dialog:update(dt)
    if love.keyboard.returnIsPressed then
       self.buttons[#self.buttons].onClick()
    end
+
    if love.keyboard.escapeIsPressed then
       self.buttons[1].onClick()
    end
-   self.height = TITLE_HEIGHT + MARGIN_PER_ELEMENT + self.messageText:getHeight()
+
+   self:repositionIfNecessary()
 
    for i = 1, #self.controls do
-      self.height = self.height + MARGIN_PER_ELEMENT
-      self.controls[i].x = self.x + PADDING_SIDES
-      self.controls[i].y = self.y + self.height
       self.controls[i]:update(dt)
-      self.height = self.height + self.controls[i].height
    end
 
-   self.height = self.height + MARGIN_PER_ELEMENT + FOOTER_PADDING_TOP
+   for i = #self.buttons, 1, -1 do
+      self.buttons[i]:update(dt)
+   end
+end
+
+function Dialog:repositionIfNecessary()
+   local screenWidth, screenHeight = love.graphics.getDimensions()
+   if screenWidth == self.lastScreenWidth and screenHeight == self.lastScreenHeight then
+      return
+   end
+
+   self.lastScreenWidth, self.lastScreenHeight = screenWidth, screenHeight
+
+   self.x = math.floor((screenWidth - self.width) / 2)
+   self.y = math.floor((screenHeight - self.height) / 2)
+
+   local y = self.y + TITLE_HEIGHT + MARGIN_PER_ELEMENT + self.messageText:getHeight()
+
+   for i = 1, #self.controls do
+      y = y + MARGIN_PER_ELEMENT
+      self.controls[i].x = self.x + PADDING_SIDES
+      self.controls[i].y = y
+      y = y + self.controls[i].height
+   end
+
+   y = y + MARGIN_PER_ELEMENT + FOOTER_PADDING_TOP
    local rightX = self.x + self.width - PADDING_SIDES
    for i = #self.buttons, 1, -1 do
       local leftX = rightX - self.buttons[i].width
       self.buttons[i].x = leftX
-      self.buttons[i].y = self.y + self.height
-      self.buttons[i]:update(dt)
+      self.buttons[i].y = y
       rightX = leftX - MARGIN_PER_ELEMENT
    end
-
-   self.height = self.height + self.buttons[1].height + math.floor(self.buttons[1].height / 3)
-
-   self.x = math.floor((love.graphics.getWidth() - self.width) / 2)
-   self.y = math.floor((love.graphics.getHeight() - self.height) / 2)
 end
 
 --- LOVE draw handler
 function Dialog:draw()
+   self:repositionIfNecessary()
    love.graphics.setColor(OVERLAY.r, OVERLAY.g, OVERLAY.b, OVERLAY.a)
    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 
