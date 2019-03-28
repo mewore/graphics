@@ -1,4 +1,4 @@
-require "views/map-editor"
+require "views/main-menu"
 require "lib/advanced-mouse-input"
 require "util/view-stack"
 
@@ -37,9 +37,8 @@ function love.keyboard.focus(element)
 end
 
 local advancedMouseInput = AdvancedMouseInput:create()
-local mapEditor = MapEditor:create(love.filesystem.getWorkingDirectory() .. "/tilesheets")
-mapEditor.onClose = function() love.event.quit() end
-viewStack = ViewStack:create(mapEditor)
+local mainMenu = MainMenu:create()
+viewStack = ViewStack:create(mainMenu)
 local background = {}
 
 --- LOVE update handler
@@ -68,6 +67,5 @@ end
 
 --- LOVE draw handler
 function love.draw()
-   love.graphics.clear(1, 1, 1, 1)
    viewStack:draw()
 end

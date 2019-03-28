@@ -16,7 +16,6 @@ local MAP_HEIGHT = 32
 
 local SAVE_BUTTON = "s"
 local LOAD_BUTTON = "l"
-local MAP_SAVE_FILE_NAME = love.filesystem.getWorkingDirectory() .. "/maps/test"
 
 local function map(array, functionToApply)
    local newArray = {}
@@ -41,8 +40,9 @@ local TOOL_HOTKEYS = {
 }
 
 --- Displays a map and allows the user to edit it
+-- @param mapPath {string} - The path to the map file
 -- @param spritesheetDirectoryPath {string} - The path to the directroy that contains all of the spritesheets
-function MapEditor:create(spritesheetDirectoryPath)
+function MapEditor:create(mapPath, spritesheetDirectoryPath)
    local tileNameToInfoFile = {}
    local spritesheetDirectory = NativeFile:create(spritesheetDirectoryPath)
    for _, jsonFile in ipairs(spritesheetDirectory:getFiles("json")) do
@@ -88,8 +88,10 @@ function MapEditor:create(spritesheetDirectoryPath)
    end
 
    local map = Map:create(MAP_WIDTH, MAP_HEIGHT, tileWidth, tileHeight, spritesheets)
+   map:loadFrom(mapPath)
 
    local this = {
+      mapPath = mapPath,
       directory = spritesheetDirectory,
       spritesheetFiles = allTilesheetFiles,
       navigator = navigator,
@@ -173,9 +175,9 @@ function MapEditor:update(dt)
 
    if love.keyboard.controlIsDown or love.keyboard.commandIsDown then
       if love.keyboard.keysPressed[SAVE_BUTTON] then
-         self.map:saveTo(MAP_SAVE_FILE_NAME)
+         self.map:saveTo(self.mapPath)
       elseif love.keyboard.keysPressed[LOAD_BUTTON] then
-         self.map:loadFrom(MAP_SAVE_FILE_NAME)
+         self.map:loadFrom(self.mapPath)
          self.tools[TOOL_POINT_EDITOR]:setPoints(self.map.points)
       end
       if not self.sidebar.isOpaque and self.activeTool == TOOL_MAP_EDITOR then

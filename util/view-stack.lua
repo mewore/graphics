@@ -13,6 +13,8 @@ function ViewStack:create(firstView)
       this:pushView(firstView)
    end
 
+   firstView.onClose = function() love.event.quit() end
+
    return this
 end
 
