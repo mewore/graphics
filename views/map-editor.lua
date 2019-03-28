@@ -88,7 +88,6 @@ function MapEditor:create(mapPath, spritesheetDirectoryPath)
    end
 
    local map = Map:create(MAP_WIDTH, MAP_HEIGHT, tileWidth, tileHeight, spritesheets)
-   map:loadFrom(mapPath)
 
    local this = {
       mapPath = mapPath,
@@ -153,6 +152,8 @@ function MapEditor:create(mapPath, spritesheetDirectoryPath)
       end
    end)
 
+   map:loadFrom(mapPath)
+   this.tools[TOOL_POINT_EDITOR]:setPoints(map.points)
 
    return this
 end

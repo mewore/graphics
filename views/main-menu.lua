@@ -26,14 +26,11 @@ local HAND_CURSOR = love.mouse.getSystemCursor("hand")
 --- The main menu
 function MainMenu:create()
    local mapFiles = NativeFile:create(MAP_DIRECTORY):getFiles("map")
-   for _, mapFile in ipairs(mapFiles) do
-      print(mapFile.path)
-   end
 
    local y = PADDING_TOP
    local mapListItems = {}
    for i = 1, #mapFiles do
-      local text = love.graphics.newText(MAP_NAME_FONT, mapFiles[i].filename)
+      local text = love.graphics.newText(MAP_NAME_FONT, mapFiles[i].name)
       mapListItems[i] = {
          path = MAP_DIRECTORY .. "/" .. mapFiles[i].name,
          text = text,
@@ -62,6 +59,8 @@ function MainMenu:update()
    if love.keyboard.escapeIsPressed and self.onClose then
       self.onClose()
    end
+
+   self:repositionIfNecessary()
 
    for _, mapItem in ipairs(self.mapListItems) do
       local mouseInfo = love.mouse.registerSolid(mapItem)
