@@ -29,18 +29,36 @@ local TILESHEET_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/tilesheet
 --- The main menu
 function MainMenu:create()
    local mapFiles = NativeFile:create(MAP_DIRECTORY):getFiles("map")
-   local mapNames = {}
+   local mapItems = {}
    for i = 1, #mapFiles do
-      mapNames[i] = mapFiles[i].name
-   end
-   local tilesheetFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("png")
-   local tilesheetNames = {}
-   for i = 1, #tilesheetFiles do
-      tilesheetNames[i] = tilesheetFiles[i].name
+      mapItems[i] = { value = mapFiles[i].name }
    end
 
-   local mapList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), mapNames)
-   local tilesheetList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), tilesheetNames)
+   local tilesheetFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("png")
+   local tilesheetInfoFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("json")
+   local tilesheetInfoByName = {}
+   for _, tilesheetInfoFile in ipairs(tilesheetInfoFiles) do
+      tilesheetInfoByName[tilesheetInfoFile.name] = tilesheetInfoFile:readAsJson()
+   end
+
+   local tilesheetItems = {}
+   for index, file in ipairs(tilesheetFiles) do
+      local tilesheetInfo = tilesheetInfoByName[file.name]
+      if not tilesheetInfo then
+         error("There is no " .. file.name .. ".json file corresponding to " .. file.filename)
+      end
+      local tilesheetImageData = love.image.newImageData(love.filesystem.newFileData(file:read(), file.name))
+      tilesheetItems[index] = {
+         label = file.name,
+         value = file.path,
+         iconData = tilesheetImageData,
+         iconQuadWidth = tilesheetInfo.width,
+         iconQuadHeight = tilesheetInfo.height,
+      }
+   end
+
+   local mapList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), mapItems)
+   local tilesheetList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), tilesheetItems)
 
    local this = {
       lists = { mapList, tilesheetList },
@@ -57,7 +75,7 @@ function MainMenu:create()
    end)
 
    tilesheetList:onSelect(function(value)
-      local imageEditor = ImageEditor:create(TILESHEET_DIRECTORY .. "/" .. value .. ".png")
+      local imageEditor = ImageEditor:create(value)
       viewStack:pushView(imageEditor)
       imageEditor.onClose = function() viewStack:popView(imageEditor) end
    end)
