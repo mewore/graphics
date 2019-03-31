@@ -1,55 +1,66 @@
+require "controls/list"
 require "data/map-encoder"
 require "data/native-file"
 require "views/map-editor"
+require "views/image-editor"
 
 MainMenu = {}
 MainMenu.__index = MainMenu
 
 local CARLITO_FONT_PATH = 'fonts/carlito.ttf'
-local MAP_NAME_FONT = love.graphics.newFont(CARLITO_FONT_PATH, 14)
+
 local TITLE_FONT = love.graphics.newFont(CARLITO_FONT_PATH, 32)
 local TITLE_PADDING_TOP = 10
-local TITLE_TEXT = love.graphics.newText(TITLE_FONT, "Choose a map to edit")
-local PADDING_TOP = TITLE_PADDING_TOP + TITLE_TEXT:getHeight() + 10
+local TITLE_TEXT = love.graphics.newText(TITLE_FONT, "Main Menu")
 
-local MARGIN_BOTTOM = 0
+local SUBTITLE_FONT = love.graphics.newFont(CARLITO_FONT_PATH, 18)
+local SUBTITLE_PADDING_TOP = 10
+local MAPS_SUBTITLE_TEXT = love.graphics.newText(SUBTITLE_FONT, "Maps")
+local TILESHEET_SUBTITLE_TEXT = love.graphics.newText(SUBTITLE_FONT, "Tiles")
+local SUBTITLE_Y_POSITION = TITLE_PADDING_TOP + TITLE_TEXT:getHeight() + SUBTITLE_PADDING_TOP
 
-local MAP_ITEM_PADDING = 3
-local MAP_ITEM_WIDTH = 300
+local LIST_Y_POSITION = SUBTITLE_Y_POSITION + MAPS_SUBTITLE_TEXT:getHeight()
 
 local BACKGROUND_VALUE = 0.2
 
 local MAP_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/maps"
-local SPRITESHEET_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/tilesheets"
-local HAND_CURSOR = love.mouse.getSystemCursor("hand")
+local TILESHEET_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/tilesheets"
 
 --- The main menu
 function MainMenu:create()
    local mapFiles = NativeFile:create(MAP_DIRECTORY):getFiles("map")
-
-   local y = PADDING_TOP
-   local mapListItems = {}
+   local mapNames = {}
    for i = 1, #mapFiles do
-      local text = love.graphics.newText(MAP_NAME_FONT, mapFiles[i].name)
-      mapListItems[i] = {
-         path = MAP_DIRECTORY .. "/" .. mapFiles[i].name,
-         text = text,
-         y = y,
-         textY = y + MAP_ITEM_PADDING,
-         width = math.max(text:getWidth() + MAP_ITEM_PADDING * 2, MAP_ITEM_WIDTH),
-         height = text:getHeight() + MAP_ITEM_PADDING * 2,
-         isHovered = false,
-      }
-      y = y + mapListItems[i].height + MARGIN_BOTTOM
+      mapNames[i] = mapFiles[i].name
+   end
+   local tilesheetFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("png")
+   local tilesheetNames = {}
+   for i = 1, #tilesheetFiles do
+      tilesheetNames[i] = tilesheetFiles[i].name
    end
 
+   local mapList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), mapNames)
+   local tilesheetList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), tilesheetNames)
+
    local this = {
-      mapListItems = mapListItems,
-      mapEditor = nil,
+      lists = { mapList, tilesheetList },
+      subtitles = { MAPS_SUBTITLE_TEXT, TILESHEET_SUBTITLE_TEXT },
    }
    setmetatable(this, self)
 
    this:repositionIfNecessary()
+
+   mapList:onSelect(function(value)
+      local mapEditor = MapEditor:create(MAP_DIRECTORY .. "/" .. value, TILESHEET_DIRECTORY)
+      viewStack:pushView(mapEditor)
+      mapEditor.onClose = function() viewStack:popView(mapEditor) end
+   end)
+
+   tilesheetList:onSelect(function(value)
+      local imageEditor = ImageEditor:create(TILESHEET_DIRECTORY .. "/" .. value .. ".png")
+      viewStack:pushView(imageEditor)
+      imageEditor.onClose = function() viewStack:popView(imageEditor) end
+   end)
 
    return this
 end
@@ -62,33 +73,24 @@ function MainMenu:update()
 
    self:repositionIfNecessary()
 
-   for _, mapItem in ipairs(self.mapListItems) do
-      local mouseInfo = love.mouse.registerSolid(mapItem)
-      mapItem.isHovered = mouseInfo.isHovered
-      if mapItem.isHovered then
-         love.mouse.cursor = HAND_CURSOR
-      end
-      if mapItem.isHovered and mouseInfo.dragConfirmed then
-         self.mapEditor = MapEditor:create(mapItem.path, SPRITESHEET_DIRECTORY)
-         viewStack:pushView(self.mapEditor)
-         self.mapEditor.onClose = function()
-            viewStack:popView(self.mapEditor)
-            self.mapEditor = nil
-         end
-      end
+   for _, list in ipairs(self.lists) do
+      list:update()
    end
 end
 
 function MainMenu:repositionIfNecessary()
-   local screenWidth, screenHeight = love.graphics.getDimensions()
-   if screenWidth == self.lastScreenWidth and screenHeight == self.lastScreenHeight then
+   local windowWidth = love.graphics.getDimensions()
+   if windowWidth == self.lastWidth then
       return
    end
-   self.lastScreenWidth, self.lastScreenHeight = screenWidth, screenHeight
+   self.lastWidth = windowWidth
 
-   for _, mapItem in ipairs(self.mapListItems) do
-      mapItem.x = math.floor((screenWidth - mapItem.width) / 2)
-      mapItem.textX = mapItem.x + math.floor((mapItem.width - mapItem.text:getWidth()) / 2)
+   local listWidth = math.floor(love.graphics.getWidth() / 2)
+   local currentX = 0
+   for _, list in ipairs(self.lists) do
+      list:setX(currentX)
+      list:setWidth(listWidth)
+      currentX = currentX + listWidth
    end
 end
 
@@ -96,14 +98,17 @@ end
 function MainMenu:draw()
    love.graphics.clear(BACKGROUND_VALUE * 1.1, BACKGROUND_VALUE, BACKGROUND_VALUE * 1.2)
 
+   love.graphics.setColor(0.2, 0.7, 1.0)
    love.graphics.draw(TITLE_TEXT, math.floor((love.graphics.getWidth() - TITLE_TEXT:getWidth()) / 2), TITLE_PADDING_TOP)
+   love.graphics.reset()
 
-   for _, mapItem in ipairs(self.mapListItems) do
-      if mapItem.isHovered then
-         love.graphics.setColor(1, 1, 1, 0.1)
-         love.graphics.rectangle("fill", mapItem.x, mapItem.y, mapItem.width, mapItem.height)
-         love.graphics.reset()
+   for index, list in ipairs(self.lists) do
+      list:draw()
+      love.graphics.setColor(0.2, 0.7, 1.0)
+      love.graphics.draw(self.subtitles[index], math.floor(list.x + (list.width - self.subtitles[index]:getWidth()) / 2), SUBTITLE_Y_POSITION)
+      love.graphics.reset()
+      if index > 1 then
+         love.graphics.line(list.x, SUBTITLE_Y_POSITION, list.x, love.graphics.getHeight())
       end
-      love.graphics.draw(mapItem.text, mapItem.textX, mapItem.textY)
    end
 end
