@@ -49,11 +49,10 @@ function MainMenu:create()
       if not tilesheetInfo then
          error("There is no " .. file.name .. ".json file corresponding to " .. file.filename)
       end
-      local tilesheetImageData = love.image.newImageData(love.filesystem.newFileData(file:read(), file.name))
       tilesheetItems[index] = {
          label = file.name,
          value = file.path,
-         iconData = tilesheetImageData,
+         icon = file:readAsImage(),
          iconQuadWidth = tilesheetInfo.width,
          iconQuadHeight = tilesheetInfo.height,
       }
@@ -62,12 +61,24 @@ function MainMenu:create()
    local spriteDirectories = NativeFile:create(SPRITE_DIRECTORY):getDirectories()
    local spriteItems = {}
    for _, spriteDirectory in ipairs(spriteDirectories) do
-      spriteItems[#spriteItems + 1] = { value = spriteDirectory.name }
+      local item = { value = spriteDirectory.name }
+      local spriteIconFile = spriteDirectory:getChild("icon.png")
+      if not spriteIconFile:isFile() then
+         spriteIconFile = spriteDirectory:getChild("idle.png")
+      end
+      if spriteIconFile:isFile() then
+         local icon = spriteIconFile:readAsImage()
+         item.icon = icon
+         item.iconQuadWidth = icon:getHeight()
+         item.iconQuadHeight = icon:getHeight()
+      end
+
+      spriteItems[#spriteItems + 1] = item
    end
 
    local mapList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), mapItems)
    local tilesheetList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), tilesheetItems)
-   local spriteList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), spriteItems)
+   local spriteList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), spriteItems, { iconSize = 32 })
 
    local this = {
       lists = { mapList, tilesheetList, spriteList },

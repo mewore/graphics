@@ -4,7 +4,7 @@ List.__index = List
 local CARLITO_FONT_PATH = 'fonts/carlito.ttf'
 local ITEM_FONT_SIZE = 14
 local ITEM_FONT = love.graphics.newFont(CARLITO_FONT_PATH, ITEM_FONT_SIZE)
-local ICON_SIZE = 16
+local DEFAULT_ICON_SIZE = 16
 local ICON_MARGIN_RIGHT = 4
 
 local HOVER_CURSOR = love.mouse.getSystemCursor("hand")
@@ -16,36 +16,38 @@ local ITEM_HORIZONTAL_PADDING = 3
 -- @param x {number} - The (leftmost) X position of the list
 -- @param y {number} - The (topmost) Y position of the list
 -- @param width {number} - The width of the list
--- @param itemValues {{value: string, label?: string, iconQuad?, iconQuadWidth?: number, iconQuadHeight?: number}[]} - The items in the list
-function List:create(x, y, width, items)
-   for _, item in ipairs(items) do
-      if not item.icon and item.iconData then
-         item.icon = love.graphics.newImage(item.iconData)
-      end
-
-      if item.icon then
-         if item.iconQuadWidth and item.iconQuadHeight then
-            item.iconQuad = love.graphics.newQuad(0, 0, item.iconQuadWidth, item.iconQuadHeight,
-               item.icon:getDimensions())
-
-            item.iconScale = ICON_SIZE / math.max(item.iconQuadWidth, item.iconQuadHeight)
-            item.iconOffsetX = math.floor((ICON_SIZE - item.iconQuadWidth * item.iconScale) / 2)
-            item.iconOffsetY = math.floor((ICON_SIZE - item.iconQuadHeight * item.iconScale) / 2)
-         else
-            item.iconScale = ICON_SIZE / math.max(item.icon:getWidth(), item.icon:getHeight())
-            item.iconOffsetX = math.floor((ICON_SIZE - item.icon:getWidth() * item.iconScale) / 2)
-            item.iconOffsetY = math.floor((ICON_SIZE - item.icon:getHeight() * item.iconScale) / 2)
-         end
-      end
-   end
+-- @param items {{value: string, label?: string, icon?, iconQuad?, iconQuadWidth?: number, iconQuadHeight?: number}[]} - The items in the list
+-- @param options {{iconSize?: int} | nil} - Some additional options for the list items.
+function List:create(x, y, width, items, options)
+   options = options or {}
 
    local this = {
       y = y,
       items = items,
       selection = nil,
       selectCallbacks = {},
+      iconSize = options.iconSize or DEFAULT_ICON_SIZE,
+      hasIcons = false,
    }
    setmetatable(this, self)
+
+   for _, item in ipairs(items) do
+      if item.icon then
+         this.hasIcons = true
+         if item.iconQuadWidth and item.iconQuadHeight then
+            item.iconQuad = love.graphics.newQuad(0, 0, item.iconQuadWidth, item.iconQuadHeight,
+               item.icon:getDimensions())
+
+            item.iconScale = this.iconSize / math.max(item.iconQuadWidth, item.iconQuadHeight)
+            item.iconOffsetX = math.floor((this.iconSize - item.iconQuadWidth * item.iconScale) / 2)
+            item.iconOffsetY = math.floor((this.iconSize - item.iconQuadHeight * item.iconScale) / 2)
+         else
+            item.iconScale = this.iconSize / math.max(item.icon:getWidth(), item.icon:getHeight())
+            item.iconOffsetX = math.floor((this.iconSize - item.icon:getWidth() * item.iconScale) / 2)
+            item.iconOffsetY = math.floor((this.iconSize - item.icon:getHeight() * item.iconScale) / 2)
+         end
+      end
+   end
 
    this:setX(x)
    this:setWidth(width)
@@ -81,10 +83,7 @@ function List:setX(newX)
 
    for _, item in ipairs(self.items) do
       item.x = newX
-      item.textX = item.x + ITEM_HORIZONTAL_PADDING
-      if item.icon then
-         item.textX = item.textX + ICON_SIZE + ICON_MARGIN_RIGHT
-      end
+      item.textX = item.x + ITEM_HORIZONTAL_PADDING + (self.hasIcons and (self.iconSize + ICON_MARGIN_RIGHT) or 0)
    end
 end
 
@@ -97,12 +96,12 @@ function List:setWidth(newWidth)
    for _, item in ipairs(self.items) do
       local textWidth = newWidth - ITEM_HORIZONTAL_PADDING * 2
       if item.icon then
-         textWidth = textWidth - ICON_SIZE - ICON_MARGIN_RIGHT
+         textWidth = textWidth - self.iconSize - ICON_MARGIN_RIGHT
       end
       local _, wrappedItemValue = ITEM_FONT:getWrap(item.label or item.value, textWidth)
       item.y = currentY
       item.text = love.graphics.newText(ITEM_FONT, wrappedItemValue)
-      item.height = math.max(item.text:getHeight(), item.icon and ICON_SIZE or 0) + ITEM_VERTICAL_PADDING * 2
+      item.height = math.max(item.text:getHeight(), self.hasIcons and self.iconSize or 0) + ITEM_VERTICAL_PADDING * 2
       item.width = newWidth
       item.textY = item.y + math.floor((item.height - item.text:getHeight()) / 2)
       currentY = currentY + item.height

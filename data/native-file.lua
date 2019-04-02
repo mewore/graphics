@@ -3,9 +3,11 @@ require "data/json-encoder"
 NativeFile = {}
 NativeFile.__index = NativeFile
 
+local SEPARATOR = "/"
+
 local OS_WINDOWS = "Windows"
 local CHECK_ATTRIBUTES_FILE_NAME = "check-attributes.bat";
-local CHECK_ATTRIBUTES_FILE_LOCATION = love.filesystem.getSaveDirectory() .. "/" .. CHECK_ATTRIBUTES_FILE_NAME;
+local CHECK_ATTRIBUTES_FILE_LOCATION = love.filesystem.getSaveDirectory() .. SEPARATOR .. CHECK_ATTRIBUTES_FILE_NAME;
 
 --- Wrapper of the native (Lua) file operations to avoid using the limited love.filesystem
 --
@@ -34,6 +36,11 @@ function NativeFile:create(path)
    }
    setmetatable(this, self)
    return this
+end
+
+--- @returns {NativeFile} - A child of this directory (assuming it is one)
+function NativeFile:getChild(childName)
+   return NativeFile:create(self.path .. SEPARATOR .. childName)
 end
 
 --- Open the file at the spcified path with a mode (r/w/a/w+/a+).
@@ -68,6 +75,13 @@ function NativeFile:readAsJson()
    return JsonEncoder:create():decode(contents)
 end
 
+--- If this is a .png file, it can be read as an image.
+-- @returns {Image}
+function NativeFile:readAsImage()
+   local contents = self:read()
+   return love.graphics.newImage(love.image.newImageData(love.filesystem.newFileData(contents, self.name)))
+end
+
 --- Create or overwrite the file with the specified contents.
 -- On SUCCESS, returns nil
 -- On FAILURE, throws an error
@@ -76,6 +90,12 @@ function NativeFile:write(contents)
    local file = openFile(self.path, "wb")
    file:write(contents)
    file:close()
+end
+
+--- Checks whether the path corresponds to a file
+-- @returns {boolean}
+function NativeFile:isFile()
+   return self:getAttributes() == "--a------"
 end
 
 --- Checks whether the path corresponds to a directory
