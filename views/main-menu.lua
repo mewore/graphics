@@ -17,6 +17,7 @@ local SUBTITLE_FONT = love.graphics.newFont(CARLITO_FONT_PATH, 18)
 local SUBTITLE_PADDING_TOP = 10
 local MAPS_SUBTITLE_TEXT = love.graphics.newText(SUBTITLE_FONT, "Maps")
 local TILESHEET_SUBTITLE_TEXT = love.graphics.newText(SUBTITLE_FONT, "Tiles")
+local SPRITES_SUBTITLE_TEXT = love.graphics.newText(SUBTITLE_FONT, "Sprites")
 local SUBTITLE_Y_POSITION = TITLE_PADDING_TOP + TITLE_TEXT:getHeight() + SUBTITLE_PADDING_TOP
 
 local LIST_Y_POSITION = SUBTITLE_Y_POSITION + MAPS_SUBTITLE_TEXT:getHeight()
@@ -25,6 +26,7 @@ local BACKGROUND_VALUE = 0.2
 
 local MAP_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/maps"
 local TILESHEET_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/tilesheets"
+local SPRITE_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/sprites"
 
 --- The main menu
 function MainMenu:create()
@@ -57,12 +59,19 @@ function MainMenu:create()
       }
    end
 
+   local spriteDirectories = NativeFile:create(SPRITE_DIRECTORY):getDirectories()
+   local spriteItems = {}
+   for _, spriteDirectory in ipairs(spriteDirectories) do
+      spriteItems[#spriteItems + 1] = { value = spriteDirectory.name }
+   end
+
    local mapList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), mapItems)
    local tilesheetList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), tilesheetItems)
+   local spriteList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), spriteItems)
 
    local this = {
-      lists = { mapList, tilesheetList },
-      subtitles = { MAPS_SUBTITLE_TEXT, TILESHEET_SUBTITLE_TEXT },
+      lists = { mapList, tilesheetList, spriteList },
+      subtitles = { MAPS_SUBTITLE_TEXT, TILESHEET_SUBTITLE_TEXT, SPRITES_SUBTITLE_TEXT },
    }
    setmetatable(this, self)
 
@@ -103,7 +112,7 @@ function MainMenu:repositionIfNecessary()
    end
    self.lastWidth = windowWidth
 
-   local listWidth = math.floor(love.graphics.getWidth() / 2)
+   local listWidth = math.floor(love.graphics.getWidth() / 3)
    local currentX = 0
    for _, list in ipairs(self.lists) do
       list:setX(currentX)

@@ -59,7 +59,7 @@ function List:update()
       local mouseInfo = love.mouse.registerSolid(item)
       item.isHovered = mouseInfo.isHovered
 
-      if mouseInfo.isHovered then
+      if mouseInfo.isHovered and #self.selectCallbacks > 0 then
          love.mouse.cursor = HOVER_CURSOR
          if mouseInfo.dragConfirmed then
             for _, callback in ipairs(self.selectCallbacks) do
