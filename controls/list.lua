@@ -32,27 +32,31 @@ function List:create(x, y, width, items, options)
    setmetatable(this, self)
 
    for _, item in ipairs(items) do
-      if item.icon then
-         this.hasIcons = true
-         if item.iconQuadWidth and item.iconQuadHeight then
-            item.iconQuad = love.graphics.newQuad(0, 0, item.iconQuadWidth, item.iconQuadHeight,
-               item.icon:getDimensions())
-
-            item.iconScale = this.iconSize / math.max(item.iconQuadWidth, item.iconQuadHeight)
-            item.iconOffsetX = math.floor((this.iconSize - item.iconQuadWidth * item.iconScale) / 2)
-            item.iconOffsetY = math.floor((this.iconSize - item.iconQuadHeight * item.iconScale) / 2)
-         else
-            item.iconScale = this.iconSize / math.max(item.icon:getWidth(), item.icon:getHeight())
-            item.iconOffsetX = math.floor((this.iconSize - item.icon:getWidth() * item.iconScale) / 2)
-            item.iconOffsetY = math.floor((this.iconSize - item.icon:getHeight() * item.iconScale) / 2)
-         end
-      end
+      this:initializeItemIcon(item)
    end
 
    this:setX(x)
    this:setWidth(width)
 
    return this
+end
+
+function List:initializeItemIcon(item)
+   if item.icon then
+      self.hasIcons = true
+      if item.iconQuadWidth and item.iconQuadHeight then
+         item.iconQuad = love.graphics.newQuad(0, 0, item.iconQuadWidth, item.iconQuadHeight,
+            item.icon:getDimensions())
+
+         item.iconScale = self.iconSize / math.max(item.iconQuadWidth, item.iconQuadHeight)
+         item.iconOffsetX = math.floor((self.iconSize - item.iconQuadWidth * item.iconScale) / 2)
+         item.iconOffsetY = math.floor((self.iconSize - item.iconQuadHeight * item.iconScale) / 2)
+      else
+         item.iconScale = self.iconSize / math.max(item.icon:getWidth(), item.icon:getHeight())
+         item.iconOffsetX = math.floor((self.iconSize - item.icon:getWidth() * item.iconScale) / 2)
+         item.iconOffsetY = math.floor((self.iconSize - item.icon:getHeight() * item.iconScale) / 2)
+      end
+   end
 end
 
 --- LOVE update handler
@@ -106,6 +110,22 @@ function List:setWidth(newWidth)
       item.textY = item.y + math.floor((item.height - item.text:getHeight()) / 2)
       currentY = currentY + item.height
    end
+end
+
+--- Add an item at such a position that the list remains sorted
+-- @param newItem {Item} The new item
+function List:addItemAndKeepSorted(newItem)
+   local currentItem = newItem
+   for i = 1, #self.items do
+      if self.items[i].value > currentItem.value then
+         currentItem, self.items[i] = self.items[i], currentItem
+      end
+   end
+   self.items[#self.items + 1] = currentItem
+
+   self:initializeItemIcon(newItem)
+   self:setX(self.x)
+   self:setWidth(self.width)
 end
 
 --- LOVE draw handler

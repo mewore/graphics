@@ -28,12 +28,20 @@ local MAP_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/maps"
 local TILESHEET_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/tilesheets"
 local SPRITE_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/sprites"
 
+local NEW_MAP_ITEM = "(+) New map"
+
 --- The main menu
 function MainMenu:create()
    local mapFiles = NativeFile:create(MAP_DIRECTORY):getFiles("map")
-   local mapItems = {}
+   local mapItems = { { value = NEW_MAP_ITEM } }
+   local mapTable = {}
    for i = 1, #mapFiles do
-      mapItems[i] = { value = mapFiles[i].name }
+      if not NativeFile:create(MAP_DIRECTORY):getChild(mapFiles[i].name .. ".json"):isFile() then
+         print("Map " .. mapFiles[i].name .. " has no JSON file. Pretending it doesn't exist...")
+      else
+         mapTable[mapFiles[i].name] = true
+         mapItems[#mapItems + 1] = { value = mapFiles[i].name }
+      end
    end
 
    local tilesheetFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("png")
@@ -89,9 +97,53 @@ function MainMenu:create()
    this:repositionIfNecessary()
 
    mapList:onSelect(function(value)
-      local mapEditor = MapEditor:create(MAP_DIRECTORY .. "/" .. value, TILESHEET_DIRECTORY)
-      viewStack:pushView(mapEditor)
-      mapEditor.onClose = function() viewStack:popView(mapEditor) end
+      if value == NEW_MAP_ITEM then
+         local nameInput = TextInput:create(300, "Name", "")
+         local widthInput = TextInput:create(50, "Width", "256")
+         local heightInput = TextInput:create(50, "Height", "32")
+
+         local okButton = Button:create("OK", "solid", function()
+            local mapPath = MAP_DIRECTORY .. "/" .. nameInput.value
+            if mapTable[nameInput.value] then
+               print(mapPath .. " already exists")
+               return
+            end
+            if string.find(nameInput.value, "^[a-z][-a-z0-9]+$") == nil then
+               print(mapPath .. " is an invalid map name (names should be in kebab-case")
+               return
+            end
+            local width, height = tonumber(widthInput.value), tonumber(heightInput.value)
+            if width == nil or width <= 0 then
+               print("Invalid width: " .. widthInput.value)
+               return
+            end
+            if height == nil or height <= 0 then
+               print("Invalid height: " .. heightInput.value)
+               return
+            end
+
+            local mapTiles = {}
+            local mapTileCount = width * height
+            for i = 1, mapTileCount do
+               mapTiles[i] = 0
+            end
+            MapEncoder:create():saveToFile(mapPath, { points = {}, width = width, height = height, tiles = mapTiles })
+            mapList:addItemAndKeepSorted({ value = nameInput.value })
+            viewStack:popView(self.dialog)
+            self.dialog = nil
+         end)
+         local cancelButton = Button:create("Cancel", nil, function()
+            viewStack:popView(self.dialog)
+            self.dialog = nil
+         end)
+
+         self.dialog = Dialog:create("Create a new map", "What should the name of the map be?",
+            { nameInput, widthInput, heightInput }, { cancelButton, okButton })
+      else
+         local mapEditor = MapEditor:create(MAP_DIRECTORY .. "/" .. value, TILESHEET_DIRECTORY)
+         viewStack:pushView(mapEditor)
+         mapEditor.onClose = function() viewStack:popView(mapEditor) end
+      end
    end)
 
    tilesheetList:onSelect(function(value)

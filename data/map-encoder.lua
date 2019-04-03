@@ -26,7 +26,7 @@ end
 -- @param filename {string}
 -- @param map {table}
 function MapEncoder:saveToFile(filename, map)
-   local mapData = encodeMapTiles(map.tiles, map.mapWidth, map.mapHeight)
+   local mapData = encodeMapTiles(map.tiles)
    local mapPropertiesData = JsonEncoder:create():encode({
       width = map.width,
       height = map.height,
