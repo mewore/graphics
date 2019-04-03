@@ -2,7 +2,7 @@ require "controls/list"
 require "data/map-encoder"
 require "data/native-file"
 require "views/map-editor"
-require "views/image-editor"
+require "views/tile-editor"
 
 MainMenu = {}
 MainMenu.__index = MainMenu

@@ -6,7 +6,7 @@ require "navigator"
 require "map"
 require "tools/point-editor"
 require "tools/tile-controls"
-require "views/image-editor"
+require "views/tile-editor"
 
 MapEditor = {}
 MapEditor.__index = MapEditor
