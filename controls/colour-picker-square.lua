@@ -83,6 +83,7 @@ function ColourPickerSquare:create(options)
       selectionX = 1,
       selectionY = 0,
       isSelecting = false,
+      hue = 0,
    }
    setmetatable(this, self)
 
@@ -120,6 +121,7 @@ function ColourPickerSquare:select(x, y)
 end
 
 function ColourPickerSquare:setHue(newHue)
+   self.hue = newHue
    self.imageData = love.image.newImageData(SIZE, SIZE)
    for y = 0, SIZE - 1 do
       for x = 0, SIZE - 1 do
@@ -134,6 +136,7 @@ function ColourPickerSquare:setHue(newHue)
       end
    end
    self.image = love.graphics.newImage(self.imageData)
+   self:select(self.selectionX, self.selectionY)
 end
 
 --- LOVE draw handler
