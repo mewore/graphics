@@ -118,9 +118,12 @@ function PointEditor:update()
             if mouseInfo.dragConfirmed.button == LEFT_MOUSE_BUTTON then
                -- Edit the active point
                self.pointDragInfo = nil
-               local idInput = TextInput:create(300, "ID", activePoint.id)
+               local idInput = TextInput:create(300, "ID", activePoint.id, { nonEmpty = true })
                local dataInput = TextInput:create(300, "Data (optional)", activePoint.data)
                local okButton = Button:create("OK", "solid", function()
+                  if not (idInput.isValid and dataInput.isValid) then
+                     return
+                  end
                   activePoint.id = idInput.value
                   activePoint.data = dataInput.value
                   self.pointIdText[self.activeIndex] = love.graphics.newText(POINT_ID_FONT, activePoint.id)
@@ -167,9 +170,12 @@ function PointEditor:update()
             id = "",
             data = "",
          }
-         local idInput = TextInput:create(300, "ID", "")
+         local idInput = TextInput:create(300, "ID", "", { nonEmpty = true })
          local dataInput = TextInput:create(300, "Data (optional)", "")
          local okButton = Button:create("OK", "solid", function()
+            if not (idInput.isValid and dataInput.isValid) then
+               return
+            end
             newPoint.id = idInput.value
             newPoint.data = dataInput.value
             self.points[#self.points + 1] = newPoint

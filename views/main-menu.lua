@@ -98,29 +98,20 @@ function MainMenu:create()
 
    mapList:onSelect(function(value)
       if value == NEW_MAP_ITEM then
-         local nameInput = TextInput:create(300, "Name", "")
-         local widthInput = TextInput:create(50, "Width", "256")
-         local heightInput = TextInput:create(50, "Height", "32")
+         local nameInput = TextInput:create(300, "Name", "", {
+            kebabCase = true,
+            validations = { function(value) return not mapTable[value] end }
+         })
+         local widthInput = TextInput:create(50, "Width", "256", { positive = true, integer = true })
+         local heightInput = TextInput:create(50, "Height", "32", { positive = true, integer = true })
 
          local okButton = Button:create("OK", "solid", function()
+            if not (nameInput.isValid and widthInput.isValid and heightInput.isValid) then
+               return
+            end
+
             local mapPath = MAP_DIRECTORY .. "/" .. nameInput.value
-            if mapTable[nameInput.value] then
-               print(mapPath .. " already exists")
-               return
-            end
-            if string.find(nameInput.value, "^[a-z][-a-z0-9]+$") == nil then
-               print(mapPath .. " is an invalid map name (names should be in kebab-case")
-               return
-            end
             local width, height = tonumber(widthInput.value), tonumber(heightInput.value)
-            if width == nil or width <= 0 then
-               print("Invalid width: " .. widthInput.value)
-               return
-            end
-            if height == nil or height <= 0 then
-               print("Invalid height: " .. heightInput.value)
-               return
-            end
 
             local mapTiles = {}
             local mapTileCount = width * height
