@@ -29,11 +29,11 @@ end
 
 local BOX_OUTLINE_COLOUR = { r = 0, g = 0, b = 0, a = 1 }
 
-local HOVER_CURSOR = love.mouse.getSystemCursor("sizewe")
-local DRAG_CURSOR = love.mouse.getSystemCursor("sizewe")
+local HOVER_CURSOR = love.mouse.getSystemCursor("sizens")
+local DRAG_CURSOR = love.mouse.getSystemCursor("sizens")
 
-local WIDTH = 300
-local HEIGHT = 32
+local WIDTH = 32
+local HEIGHT = 300
 
 local MAX_HUE = 360
 
@@ -42,9 +42,9 @@ function ColourPickerHueSlider:create(correspondingSquare, options)
    options = options or {}
 
    local imageData = love.image.newImageData(WIDTH, HEIGHT)
-   for x = 0, WIDTH - 1 do
-      local red, green, blue = hslToRgb((x / WIDTH) * MAX_HUE, 1, 0.7)
-      for y = 0, HEIGHT - 1 do
+   for y = 0, HEIGHT - 1 do
+      local red, green, blue = hslToRgb((y / HEIGHT) * MAX_HUE, 1, 0.7)
+      for x = 0, WIDTH - 1 do
          imageData:setPixel(x, y, red, green, blue, 1)
       end
    end
@@ -68,7 +68,7 @@ function ColourPickerHueSlider:update()
    local mouseInfo = love.mouse.registerSolid(self)
    if mouseInfo.drag then
       love.mouse.cursor = DRAG_CURSOR
-      local newHue = math.min(1, math.max(0, (mouseInfo.drag.toX - self.x) / self.width)) * MAX_HUE
+      local newHue = math.min(1, math.max(0, (mouseInfo.drag.toY - self.y) / self.height)) * MAX_HUE
       if newHue ~= self.hue then
          self.hue = newHue
          self.correspondingSquare:setHue(newHue)
@@ -84,8 +84,8 @@ function ColourPickerHueSlider:draw()
 
    -- Black selection line
    love.graphics.setColor(0, 0, 0)
-   local lineX = self.x + math.floor((self.hue / MAX_HUE) * self.width)
-   love.graphics.line(lineX, self.y, lineX, self.y + self.height)
+   local lineY = self.y + math.floor((self.hue / MAX_HUE) * self.height)
+   love.graphics.line(self.x, lineY, self.x + self.width, lineY)
    love.graphics.reset()
 
    -- Border
