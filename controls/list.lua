@@ -105,7 +105,7 @@ function List:setWidth(newWidth)
       local _, wrappedItemValue = ITEM_FONT:getWrap(item.label or item.value, textWidth)
       item.y = currentY
       item.text = love.graphics.newText(ITEM_FONT, wrappedItemValue)
-      item.height = math.max(item.text:getHeight(), self.hasIcons and self.iconSize or 0) + ITEM_VERTICAL_PADDING * 2
+      item.height = math.max(item.text:getHeight(), item.icon and self.iconSize or 0) + ITEM_VERTICAL_PADDING * 2
       item.width = newWidth
       item.textY = item.y + math.floor((item.height - item.text:getHeight()) / 2)
       currentY = currentY + item.height
