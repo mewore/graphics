@@ -16,9 +16,10 @@ local POINT_COLOUR = { r = 0.4, g = 0.6, b = 0.9, a = 1 }
 local POINT_OUTLINE_COLOUR = { r = 0, g = 0, b = 0 }
 local POINT_RADIUS = 10
 
-local BOX_COLOUR = { r = 0, g = 0, b = 0, a = 0.8 }
-local BOX_INACTIVE_COLOUR = { r = 0, g = 0, b = 0, a = 0.5 }
-local BOX_PADDING = 1
+local BOX_COLOUR = { r = 0, g = 0, b = 0, a = 0.9 }
+local BOX_INACTIVE_COLOUR = { r = 0, g = 0, b = 0, a = 0.7 }
+local BOX_HORIZONTAL_PADDING = 3
+local BOX_VERTICAL_PADDING = 1
 local BOX_RADIUS = 3
 local BOX_WIDTH = 100
 local TEXT_INACTIVE = { r = 0.8, g = 0.8, b = 0.8 }
@@ -237,10 +238,13 @@ function PointEditor:draw()
          pointX, pointY = self.navigator:absoluteToScreen(point.x + dx, point.y + dy)
       end
 
+      originalPointX, originalPointY = math.floor(originalPointX), math.floor(originalPointY)
+      pointX, pointY = math.floor(pointX), math.floor(pointY)
+
       if not (pointX + BOX_WIDTH < 0 or pointX > screenWidth or pointY + 1000 < 0 or pointY > screenHeight) then
          local topY = pointY + POINT_RADIUS + 3
          local textWidth, textHeight = self.pointIdText[id]:getDimensions()
-         local boxWidth, boxHeight = textWidth + 2 * BOX_PADDING, textHeight + 2 * BOX_PADDING
+         local boxWidth, boxHeight = textWidth + 2 * BOX_HORIZONTAL_PADDING, textHeight + 2 * BOX_VERTICAL_PADDING
          setColour(self.activePointId == id and BOX_COLOUR or BOX_INACTIVE_COLOUR)
          love.graphics.rectangle("fill", math.floor(pointX - boxWidth / 2), topY, boxWidth, boxHeight,
             BOX_RADIUS, BOX_RADIUS)
@@ -258,7 +262,8 @@ function PointEditor:draw()
          love.graphics.circle("line", pointX, pointY, POINT_RADIUS)
 
          setColour(self.activePointId == id and TEXT_ACTIVE or TEXT_INACTIVE)
-         love.graphics.draw(self.pointIdText[id], pointX - math.floor(self.pointIdText[id]:getWidth() / 2), topY + BOX_PADDING)
+         love.graphics.draw(self.pointIdText[id], pointX - math.floor(self.pointIdText[id]:getWidth() / 2),
+            topY + BOX_VERTICAL_PADDING)
       end
    end
 end
