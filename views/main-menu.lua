@@ -29,6 +29,7 @@ local TILESHEET_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/tilesheet
 local SPRITE_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/sprites"
 
 local NEW_MAP_ITEM = "(+) New map"
+local NEW_TILESHEET_ITEM = "(+) New tilesheet"
 
 --- The main menu
 function MainMenu:create()
@@ -51,13 +52,15 @@ function MainMenu:create()
       tilesheetInfoByName[tilesheetInfoFile.name] = tilesheetInfoFile:readAsJson()
    end
 
-   local tilesheetItems = {}
-   for index, file in ipairs(tilesheetFiles) do
+   local tilesheetTable = {}
+   local tilesheetItems = { { value = NEW_TILESHEET_ITEM } }
+   for _, file in ipairs(tilesheetFiles) do
       local tilesheetInfo = tilesheetInfoByName[file.name]
       if not tilesheetInfo then
          error("There is no " .. file.name .. ".json file corresponding to " .. file.filename)
       end
-      tilesheetItems[index] = {
+      tilesheetTable[file.name] = true
+      tilesheetItems[#tilesheetItems + 1] = {
          label = file.name,
          value = file.path,
          icon = file:readAsImage(),
@@ -138,9 +141,50 @@ function MainMenu:create()
    end)
 
    tilesheetList:onSelect(function(value)
-      local imageEditor = ImageEditor:create(value)
-      viewStack:pushView(imageEditor)
-      imageEditor.onClose = function() viewStack:popView(imageEditor) end
+      if value == NEW_TILESHEET_ITEM then
+         local nameInput = TextInput:create(300, "Name", "", {
+            kebabCase = true,
+            validations = { function(value) return not tilesheetTable[value] end }
+         })
+         local widthInput = TextInput:create(50, "Tile width", "32", { positive = true, integer = true })
+         local heightInput = TextInput:create(50, "Tile height", "32", { positive = true, integer = true })
+
+         local okButton = Button:create("OK", "solid", function()
+            if not (nameInput.isValid and widthInput.isValid and heightInput.isValid) then
+               return
+            end
+
+            local tilesheetPath = TILESHEET_DIRECTORY .. "/" .. nameInput.value
+            local width, height = tonumber(widthInput.value), tonumber(heightInput.value)
+
+            local pngFilePath = tilesheetPath .. ".png"
+            local pngFileData = love.image.newImageData(width, height)
+            for y = 0, height - 1 do
+               for x = 0, width - 1 do
+                  pngFileData:setPixel(x, y, 0, 0, 0, 0)
+               end
+            end
+
+            local jsonFilePath = tilesheetPath .. ".json"
+            NativeFile:create(pngFilePath):write(pngFileData:encode("png"):getString())
+            NativeFile:create(jsonFilePath):writeAsJson({ width = width, height = height })
+            tilesheetList:addItemAndKeepSorted({ label = nameInput.value, value = pngFilePath })
+
+            viewStack:popView(self.dialog)
+            self.dialog = nil
+         end)
+         local cancelButton = Button:create("Cancel", nil, function()
+            viewStack:popView(self.dialog)
+            self.dialog = nil
+         end)
+
+         self.dialog = Dialog:create("Create a new tilesheet", nil,
+            { nameInput, widthInput, heightInput }, { cancelButton, okButton })
+      else
+         local imageEditor = ImageEditor:create(value)
+         viewStack:pushView(imageEditor)
+         imageEditor.onClose = function() viewStack:popView(imageEditor) end
+      end
    end)
 
    return this

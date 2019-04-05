@@ -69,7 +69,7 @@ function NativeFile:read()
 end
 
 --- If this is a .json file, it can be read as a table.
--- @returns {string} - The JSON described in the file
+-- @returns {any} - The JSON described in the file
 function NativeFile:readAsJson()
    local contents = self:read()
    return JsonEncoder:create():decode(contents)
@@ -90,6 +90,14 @@ function NativeFile:write(contents)
    local file = openFile(self.path, "wb")
    file:write(contents)
    file:close()
+end
+
+--- Create or overwrite the file with the specified contents.
+-- On SUCCESS, returns nil
+-- On FAILURE, throws an error
+-- @param contents {any} - What to write into the file (any kind of object or value)
+function NativeFile:writeAsJson(contents)
+   self:write(JsonEncoder:create():encode(contents))
 end
 
 --- Checks whether the path corresponds to a file

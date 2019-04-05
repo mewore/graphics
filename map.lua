@@ -128,30 +128,36 @@ function Map:recreateSpriteBatches()
             if tile > #self.tileSprites then
                error("Tile '" .. tile .. "' is not valid. There are only " .. #self.tileSprites .. " tile types.")
             end
-            local hasLeft = self:getTile(column - 1, row) == tile
-            local hasRight = self:getTile(column + 1, row) == tile
-            local hasUp = self:getTile(column, row - 1) == tile
-            local hasDown = self:getTile(column, row + 1) == tile
-            local sprite = self.tileSprites[tile][1 +
-                  ((hasUp and 1 or 0) * 2 + (hasDown and 1 or 0)) * 4 +
-                  ((hasLeft and 1 or 0) * 2 + (hasRight and 1 or 0))]
+            if #self.tileSprites[tile] == 1 then
+               self.spriteBatches[tile]:add(self.tileSprites[tile][1], x, y)
+            else
+               local hasLeft = self:getTile(column - 1, row) == tile
+               local hasRight = self:getTile(column + 1, row) == tile
+               local hasUp = self:getTile(column, row - 1) == tile
+               local hasDown = self:getTile(column, row + 1) == tile
+               local sprite = self.tileSprites[tile][1 +
+                     ((hasUp and 1 or 0) * 2 + (hasDown and 1 or 0)) * 4 +
+                     ((hasLeft and 1 or 0) * 2 + (hasRight and 1 or 0))]
 
-            self.spriteBatches[tile]:add(sprite, x, y)
+               self.spriteBatches[tile]:add(sprite, x, y)
 
-            if not (self:getTile(column - 1, row - 1) == tile) and hasUp and hasLeft then
-               self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_TOP_LEFT], x, y)
-            end
+               if #self.tileSprites[tile] > 16 then
+                  if not (self:getTile(column - 1, row - 1) == tile) and hasUp and hasLeft then
+                     self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_TOP_LEFT], x, y)
+                  end
 
-            if not (self:getTile(column + 1, row - 1) == tile) and hasUp and hasRight then
-               self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_TOP_RIGHT], x, y)
-            end
+                  if not (self:getTile(column + 1, row - 1) == tile) and hasUp and hasRight then
+                     self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_TOP_RIGHT], x, y)
+                  end
 
-            if not (self:getTile(column - 1, row + 1) == tile) and hasDown and hasLeft then
-               self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_BOTTOM_LEFT], x, y)
-            end
+                  if not (self:getTile(column - 1, row + 1) == tile) and hasDown and hasLeft then
+                     self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_BOTTOM_LEFT], x, y)
+                  end
 
-            if not (self:getTile(column + 1, row + 1) == tile) and hasDown and hasRight then
-               self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_BOTTOM_RIGHT], x, y)
+                  if not (self:getTile(column + 1, row + 1) == tile) and hasDown and hasRight then
+                     self.spriteBatches[tile]:add(self.tileSprites[tile][TILE_GROUND_CORNER_BOTTOM_RIGHT], x, y)
+                  end
+               end
             end
          end
       end
