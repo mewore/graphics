@@ -24,19 +24,20 @@ local FOOTER_PADDING_TOP = 5
 
 --- A simple dialog
 -- @param title {string} - The dialog title
--- @param message {string} - The message in the body of the dialog
+-- @param message {string | nil} - The message in the body of the dialog
 -- @param controls {any[]} - Controls to display after the message (in the body
 -- @param buttons {Button[]} - Buttons to display in the footer of the dialog
 function Dialog:create(title, message, controls, buttons)
-   local _, wrappedMessage = MESSAGE_FONT:getWrap(message, DEFAULT_WIDTH - PADDING_SIDES * 2)
    local this = {
       x = 0,
       y = 0,
       width = DEFAULT_WIDTH,
+      contentWidth = DEFAULT_WIDTH,
       height = 0,
       value = "",
       titleText = love.graphics.newText(TITLE_FONT, title),
-      messageText = love.graphics.newText(MESSAGE_FONT, table.concat(wrappedMessage, "\n")),
+      messageText = nil,
+      messageHeight = 0,
       controls = controls,
       buttons = buttons,
       isOpaque = false,
@@ -45,7 +46,21 @@ function Dialog:create(title, message, controls, buttons)
    }
    setmetatable(this, self)
 
-   this.height = TITLE_HEIGHT + MARGIN_PER_ELEMENT + this.messageText:getHeight()
+   if controls and #controls > 0 then
+      this.contentWidth = 0
+      for _, control in ipairs(controls) do
+         this.contentWidth = math.max(this.contentWidth, control.width)
+      end
+   end
+   this.width = this.contentWidth + PADDING_SIDES * 2
+
+   if message then
+      local _, wrappedMessage = MESSAGE_FONT:getWrap(message, this.contentWidth)
+      this.messageText = love.graphics.newText(MESSAGE_FONT, table.concat(wrappedMessage, "\n"))
+      this.messageHeight = this.messageText:getHeight()
+   end
+
+   this.height = TITLE_HEIGHT + MARGIN_PER_ELEMENT + this.messageHeight
 
    for i = 1, #controls do
       this.height = this.height + MARGIN_PER_ELEMENT + controls[i].height
@@ -92,13 +107,14 @@ function Dialog:repositionIfNecessary()
    self.x = math.floor((screenWidth - self.width) / 2)
    self.y = math.floor((screenHeight - self.height) / 2)
 
-   local y = self.y + TITLE_HEIGHT + MARGIN_PER_ELEMENT + self.messageText:getHeight()
+   local y = self.y + TITLE_HEIGHT + MARGIN_PER_ELEMENT + self.messageHeight
 
    for i = 1, #self.controls do
       y = y + MARGIN_PER_ELEMENT
       self.controls[i].x = self.x + PADDING_SIDES
       self.controls[i].y = y
       y = y + self.controls[i].height
+      self.controls[i]:update()
    end
 
    y = y + MARGIN_PER_ELEMENT + FOOTER_PADDING_TOP
@@ -122,16 +138,18 @@ function Dialog:draw()
 
    love.graphics.setColor(TEXT_COLOUR.r, TEXT_COLOUR.g, TEXT_COLOUR.b, TEXT_COLOUR.a)
    love.graphics.draw(self.titleText, self.x + PADDING_SIDES, self.y + TITLE_PADDING)
-   love.graphics.draw(self.messageText, self.x + PADDING_SIDES, self.y + TITLE_HEIGHT + MARGIN_PER_ELEMENT)
+   if self.messageText then
+      love.graphics.draw(self.messageText, self.x + PADDING_SIDES, self.y + TITLE_HEIGHT + MARGIN_PER_ELEMENT)
+   end
 
    love.graphics.setColor(TITLE_LINE_COLOUR.r, TITLE_LINE_COLOUR.g, TITLE_LINE_COLOUR.b, TITLE_LINE_COLOUR.a)
    love.graphics.line(self.x, self.y + TITLE_HEIGHT, self.x + self.width, self.y + TITLE_HEIGHT)
    love.graphics.reset()
 
-   for i = 1, #self.controls do
-      self.controls[i]:draw()
-   end
    for i = 1, #self.buttons do
       self.buttons[i]:draw()
+   end
+   for i = 1, #self.controls do
+      self.controls[i]:draw()
    end
 end
