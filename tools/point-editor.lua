@@ -43,7 +43,7 @@ function PointEditor:create(navigator)
       navigator = navigator,
       pointIdText = {},
       dialog = nil,
-      activeIndex = -1,
+      activePointId = nil,
       pointDragInfo = nil,
       isDragging = false,
       hasBeenDragged = false,
@@ -61,8 +61,8 @@ end
 function PointEditor:setPoints(newPoints)
    self.points = newPoints or {}
 
-   for i = 1, #self.points do
-      self.pointIdText[i] = love.graphics.newText(POINT_ID_FONT, self.points[i].id)
+   for id, _ in pairs(self.points) do
+      self.pointIdText[id] = love.graphics.newText(POINT_ID_FONT, id)
    end
 end
 
@@ -76,11 +76,11 @@ end
 function PointEditor:update()
    local mouseInfo = love.mouse.registerSolid(self, { isWholeScreen = true })
    if not mouseInfo.isHovered then
-      self.activeIndex = -1
+      self.activePointId = nil
       return
    end
 
-   if mouseInfo.dragStarted and self.activeIndex > -1 then
+   if mouseInfo.dragStarted and self.activePointId ~= nil then
       local mouseAbsoluteX, mouseAbsoluteY = self.navigator:screenToAbsolute(mouseInfo.drag.fromX, mouseInfo.drag.fromY)
       self.pointDragInfo = {
          startAbsoluteX = mouseAbsoluteX,
@@ -90,15 +90,15 @@ function PointEditor:update()
 
    if mouseInfo.drag then
       if mouseInfo.drag.button == LEFT_MOUSE_BUTTON then
-         if self.activeIndex > -1 then
+         if self.activePointId ~= nil then
             self.isDragging = mouseInfo.drag.maxSquaredDistance > DRAG_START_DISTANCE_SQUARED
             love.mouse.importantCursor = self.isDragging and POINT_DRAG_CURSOR or POINT_SELECTION_CURSOR
          else
             love.mouse.importantCursor = POINT_CREATION_CURSOR
          end
-      elseif mouseInfo.drag.button == RIGHT_MOUSE_BUTTON and self.activeIndex > -1 then
+      elseif mouseInfo.drag.button == RIGHT_MOUSE_BUTTON and self.activePointId ~= nil then
          local mouseX, mouseY = love.mouse.getPosition()
-         local pointX, pointY = self.navigator:absoluteToScreen(self.points[self.activeIndex].x, self.points[self.activeIndex].y)
+         local pointX, pointY = self.navigator:absoluteToScreen(self.points[self.activePointId].x, self.points[self.activePointId].y)
          local distance = getSquaredDistance(mouseX, mouseY, pointX, pointY)
          love.mouse.importantCursor = (distance < ACTIVATION_DISTANCE_SQUARED) and POINT_SELECTION_CURSOR or nil
       end
@@ -106,9 +106,9 @@ function PointEditor:update()
 
    if mouseInfo.dragConfirmed then
       local mouseAbsoluteX, mouseAbsoluteY = self.navigator:screenToAbsolute(love.mouse.getPosition())
-      print(self.activeIndex, self.isDragging)
-      if self.activeIndex > -1 then
-         local activePoint = self.points[self.activeIndex]
+      print(self.activePointId, self.isDragging)
+      if self.activePointId ~= nil then
+         local activePoint = self.points[self.activePointId]
          if self.isDragging then
             -- Move the active point to the current absolute mouse position
             local dx, dy = mouseAbsoluteX - self.pointDragInfo.startAbsoluteX, mouseAbsoluteY - self.pointDragInfo.startAbsoluteY
@@ -118,15 +118,19 @@ function PointEditor:update()
             if mouseInfo.dragConfirmed.button == LEFT_MOUSE_BUTTON then
                -- Edit the active point
                self.pointDragInfo = nil
-               local idInput = TextInput:create(300, "ID", activePoint.id, { nonEmpty = true })
+               local idInput = TextInput:create(300, "ID", self.activePointId, {
+                  nonEmpty = true,
+                  validations = { function(value) return value == self.activePointId or not self.points[value] end },
+               })
                local dataInput = TextInput:create(300, "Data (optional)", activePoint.data)
                local okButton = Button:create("OK", "solid", function()
                   if not (idInput.isValid and dataInput.isValid) then
                      return
                   end
-                  activePoint.id = idInput.value
+                  local oldId, newId = self.activePointId, idInput.value
+                  self.points[oldId], self.pointIdText[oldId] = nil, nil
+                  self.points[newId], self.pointIdText[newId] = activePoint, love.graphics.newText(POINT_ID_FONT, newId)
                   activePoint.data = dataInput.value
-                  self.pointIdText[self.activeIndex] = love.graphics.newText(POINT_ID_FONT, activePoint.id)
                   viewStack:popView(self.dialog)
                   self.dialog = nil
                end)
@@ -148,17 +152,14 @@ function PointEditor:update()
                      self.dialog = nil
                   end)
                   local yesButton = Button:create("Yes", "danger", function()
-                     local lastIndex = #self.points
-                     self.points[self.activeIndex] = self.points[lastIndex]
-                     self.pointIdText[self.activeIndex] = self.pointIdText[lastIndex]
-                     self.points[lastIndex] = nil
-                     self.pointIdText[lastIndex] = nil
+                     self.points[self.activePointId] = nil
+                     self.pointIdText[self.activePointId] = nil
                      viewStack:popView(self.dialog)
                      self.dialog = nil
                   end)
 
                   self.dialog = Dialog:create("Delete point", "Are you sure you would like to delete point '" ..
-                        self.points[self.activeIndex].id .. "'?", {}, { noButton, yesButton })
+                        self.activePointId .. "'?", {}, { noButton, yesButton })
                end
             end
          end
@@ -170,16 +171,18 @@ function PointEditor:update()
             id = "",
             data = "",
          }
-         local idInput = TextInput:create(300, "ID", "", { nonEmpty = true })
+         local idInput = TextInput:create(300, "ID", "", {
+            nonEmpty = true,
+            validations = { function(value) return not self.points[value] end },
+         })
          local dataInput = TextInput:create(300, "Data (optional)", "")
          local okButton = Button:create("OK", "solid", function()
             if not (idInput.isValid and dataInput.isValid) then
                return
             end
-            newPoint.id = idInput.value
             newPoint.data = dataInput.value
-            self.points[#self.points + 1] = newPoint
-            self.pointIdText[#self.pointIdText + 1] = love.graphics.newText(POINT_ID_FONT, newPoint.id)
+            self.points[idInput.value] = newPoint
+            self.pointIdText[idInput.value] = love.graphics.newText(POINT_ID_FONT, idInput.value)
             viewStack:popView(self.dialog)
             self.dialog = nil
          end)
@@ -196,16 +199,16 @@ function PointEditor:update()
    if not mouseInfo.drag then
       local mouseX, mouseY = love.mouse.getPosition()
       local bestDistance = ACTIVATION_DISTANCE_SQUARED
-      self.activeIndex = -1
-      for index, point in ipairs(self.points) do
+      self.activePointId = nil
+      for id, point in pairs(self.points) do
          local pointX, pointY = self.navigator:absoluteToScreen(point.x, point.y)
          local distance = getSquaredDistance(mouseX, mouseY, pointX, pointY)
          if distance < bestDistance then
-            self.activeIndex = index
+            self.activePointId = id
             bestDistance = distance
          end
       end
-      love.mouse.cursor = self.activeIndex > -1 and POINT_SELECTION_CURSOR or POINT_CREATION_CURSOR
+      love.mouse.cursor = self.activePointId ~= nil and POINT_SELECTION_CURSOR or POINT_CREATION_CURSOR
    end
 
    self.isDragging = self.isDragging and mouseInfo.drag ~= nil
@@ -224,10 +227,10 @@ function PointEditor:draw()
    local mouseX, mouseY = love.mouse.getPosition()
 
    local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
-   for index, point in ipairs(self.points) do
+   for id, point in pairs(self.points) do
       local originalPointX, originalPointY = self.navigator:absoluteToScreen(point.x, point.y)
       local pointX, pointY = originalPointX, originalPointY
-      local isDraggingCurrentPoint = self.isDragging and self.activeIndex == index
+      local isDraggingCurrentPoint = self.isDragging and self.activePointId == id
       if isDraggingCurrentPoint then
          local mouseAbsoluteX, mouseAbsoluteY = self.navigator:screenToAbsolute(mouseX, mouseY)
          local dx, dy = mouseAbsoluteX - self.pointDragInfo.startAbsoluteX, mouseAbsoluteY - self.pointDragInfo.startAbsoluteY
@@ -236,9 +239,9 @@ function PointEditor:draw()
 
       if not (pointX + BOX_WIDTH < 0 or pointX > screenWidth or pointY + 1000 < 0 or pointY > screenHeight) then
          local topY = pointY + POINT_RADIUS + 3
-         local textWidth, textHeight = self.pointIdText[index]:getDimensions()
+         local textWidth, textHeight = self.pointIdText[id]:getDimensions()
          local boxWidth, boxHeight = textWidth + 2 * BOX_PADDING, textHeight + 2 * BOX_PADDING
-         setColour(self.activeIndex == index and BOX_COLOUR or BOX_INACTIVE_COLOUR)
+         setColour(self.activePointId == id and BOX_COLOUR or BOX_INACTIVE_COLOUR)
          love.graphics.rectangle("fill", math.floor(pointX - boxWidth / 2), topY, boxWidth, boxHeight,
             BOX_RADIUS, BOX_RADIUS)
 
@@ -249,13 +252,13 @@ function PointEditor:draw()
             love.graphics.circle("line", originalPointX, originalPointY, POINT_RADIUS)
          end
 
-         setColour(#point.id > 0 and POINT_COLOUR or POINT_WITH_NO_ID_COLOUR)
+         setColour(#id > 0 and POINT_COLOUR or POINT_WITH_NO_ID_COLOUR)
          love.graphics.circle("fill", pointX, pointY, POINT_RADIUS)
          setColour(POINT_OUTLINE_COLOUR)
          love.graphics.circle("line", pointX, pointY, POINT_RADIUS)
 
-         setColour(self.activeIndex == index and TEXT_ACTIVE or TEXT_INACTIVE)
-         love.graphics.draw(self.pointIdText[index], pointX - math.floor(self.pointIdText[index]:getWidth() / 2), topY + BOX_PADDING)
+         setColour(self.activePointId == id and TEXT_ACTIVE or TEXT_INACTIVE)
+         love.graphics.draw(self.pointIdText[id], pointX - math.floor(self.pointIdText[id]:getWidth() / 2), topY + BOX_PADDING)
       end
    end
 end
