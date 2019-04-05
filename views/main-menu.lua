@@ -3,6 +3,7 @@ require "data/map-encoder"
 require "data/native-file"
 require "views/map-editor"
 require "views/tile-editor"
+require "views/sprite-editor"
 
 MainMenu = {}
 MainMenu.__index = MainMenu
@@ -72,7 +73,7 @@ function MainMenu:create()
    local spriteDirectories = NativeFile:create(SPRITE_DIRECTORY):getDirectories()
    local spriteItems = {}
    for _, spriteDirectory in ipairs(spriteDirectories) do
-      local item = { value = spriteDirectory.name }
+      local item = { label = spriteDirectory.name, value = spriteDirectory.path }
       local spriteIconFile = spriteDirectory:getChild("icon.png")
       if not spriteIconFile:isFile() then
          spriteIconFile = spriteDirectory:getChild("idle.png")
@@ -185,6 +186,12 @@ function MainMenu:create()
          viewStack:pushView(imageEditor)
          imageEditor.onClose = function() viewStack:popView(imageEditor) end
       end
+   end)
+
+   spriteList:onSelect(function(value)
+      local imageEditor = SpriteEditor:create(value)
+      viewStack:pushView(imageEditor)
+      imageEditor.onClose = function() viewStack:popView(imageEditor) end
    end)
 
    return this
