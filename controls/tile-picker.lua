@@ -47,19 +47,23 @@ function TilePicker:create(tilesheets, tileNames)
       end),
       hoveredTile = nil,
       hoveredTileOnDragStart = nil,
-      onPick = function() end,
-      onClose = function() end,
       tileNameTexts = tileNameTexts,
+      onPickHandler = nil,
    }
    setmetatable(this, self)
 
    return this
 end
 
+function TilePicker:open(_, onPickHandler)
+   self.onPickHandler = onPickHandler
+   viewStack:pushView(self)
+end
+
 --- LOVE update handler
 function TilePicker:update()
    if love.keyboard.escapeIsPressed then
-      self.onClose()
+      viewStack:popView(self)
    end
 
    local mouseX = love.mouse.getX()
@@ -86,7 +90,8 @@ function TilePicker:update()
 
    if mouseInfo.dragConfirmed and mouseInfo.dragConfirmed.button == LEFT_MOUSE_BUTTON
          and self.hoveredTileOnDragStart == self.hoveredTile and self.hoveredTile ~= nil then
-      self.onPick(self.hoveredTile)
+      self.onPickHandler(self.hoveredTile)
+      viewStack:popView(self)
    end
 end
 

@@ -32,10 +32,6 @@ function PaintDisplay:create(initialFront, initialBack, drawFunction, paintPicke
    }
    setmetatable(this, self)
 
-   if paintPicker then
-      paintPicker.onClose = function() viewStack:popView(paintPicker) end
-   end
-
    return this
 end
 

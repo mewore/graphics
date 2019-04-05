@@ -1,3 +1,5 @@
+require "controls/colour-picker"
+require "controls/paint-display"
 require "tools/tile-controls"
 require "data/native-file"
 require "navigator"
@@ -36,7 +38,7 @@ function ImageEditor:create(filename)
    local paintDisplay = PaintDisplay:create(mainColour, secondaryColour, function(x, y, colour, width, height)
       love.graphics.setColor(colour.r, colour.g, colour.b, colour.a)
       love.graphics.rectangle("fill", x, y, width, height)
-   end, nil)
+   end, ColourPicker:create())
 
    local navigator = Navigator:create(width * TILE_WIDTH, height * TILE_HEIGHT)
    local this = {

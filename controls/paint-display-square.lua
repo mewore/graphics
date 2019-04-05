@@ -29,11 +29,7 @@ function PaintDisplaySquare:update()
       self.isActive = mouseInfo.isHovered
 
       if mouseInfo.dragConfirmed and mouseInfo.isHovered then
-         viewStack:pushView(self.paintPicker)
-         self.paintPicker.onPick = function(newPaint)
-            self.value = newPaint
-            viewStack:popView(self.paintPicker)
-         end
+         self.paintPicker:open(self.value, function(value) self.value = value end)
       end
    end
 end
