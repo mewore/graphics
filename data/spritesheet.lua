@@ -63,6 +63,7 @@ function Spritesheet:create(data, tileWidth, tileHeight, name, shouldDebleedify)
    local newImage = shouldDebleedify and love.graphics.newImage(newData) or originalImage
 
    local this = {
+      name = name,
       originalData = data,
       originalImage = originalImage,
       data = newData,

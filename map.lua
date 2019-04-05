@@ -45,10 +45,14 @@ function Map:create(width, height, tileWidth, tileHeight, spritesheets)
       tiles = {},
       tileSprites = nil,
       points = {},
+      tileOrder = {},
    }
    setmetatable(this, self)
 
    this.tileSprites = map(spritesheets, function(spritesheet) return spritesheet:getQuads() end)
+   for index, spritesheet in ipairs(spritesheets) do
+      this.tileOrder[index] = spritesheet.name
+   end
 
    math.randomseed(1)
    for row = 1, this.height do
@@ -75,6 +79,7 @@ function Map:saveTo(file)
       height = self.height,
       tiles = self.tiles,
       points = self.points,
+      tileOrder = self.tileOrder,
    })
 end
 
@@ -85,7 +90,66 @@ function Map:loadFrom(file)
    self.height = data.height
    self.tiles = data.tiles
    self.points = data.points
+   self.tileOrder = data.tileOrder
+
+   -- Reorder the spritesheets(tilesheets) as their order has been defined in tileOrder
+   local spritesheetMap = {}
+   for _, spritesheet in ipairs(self.spritesheets) do
+      spritesheetMap[spritesheet.name] = spritesheet
+   end
+   self.spritesheets = {}
+   local nilTiles = 0
+   for index, name in ipairs(self.tileOrder) do
+      if spritesheetMap[name] then
+         self.spritesheets[index] = spritesheetMap[name]
+         spritesheetMap[name] = nil
+      else
+         print("Could not find tilesheet " .. name .. " for tile ID " .. index .. ". Erasing all tiles with this ID.")
+         self:changeTiles(index, TILE_EMPTY)
+         nilTiles = nilTiles + 1
+      end
+   end
+
+   -- Although it should never happen unless the game dev has renamed/deleted tilesheets manually, in the case that
+   -- there are tile names that used to have a mapping and are now gone, they should be removed.
+   local rightIndex = #self.tileOrder
+   local leftIndex = 1
+   while nilTiles > 0 do
+      while rightIndex > 0 and self.spritesheets[rightIndex] == nil do
+         self.tileOrder[rightIndex] = nil
+         rightIndex = rightIndex - 1
+         nilTiles = nilTiles - 1
+      end
+      if nilTiles == 0 then break end
+      while self.spritesheets[leftIndex] ~= nil do leftIndex = leftIndex + 1 end
+      self:changeTiles(rightIndex, leftIndex)
+
+      self.tileOrder[leftIndex] = self.tileOrder[rightIndex]
+      self.tileOrder[rightIndex] = nil
+      --      print("Swapping " .. leftIndex .. " and " .. rightIndex)
+      nilTiles = nilTiles - 1
+   end
+
+   -- Add the newly introduced (previously not mentioned in the tile order) spritesheets.
+   for _, spritesheet in pairs(spritesheetMap) do
+      self.tileOrder[#self.tileOrder + 1] = spritesheet.name
+      self.spritesheets[#self.spritesheets + 1] = spritesheet
+   end
+
+   -- Make sprite batches corresponding to the tilesheets.
+   self.spriteBatches = map(self.spritesheets, function(spritesheet)
+      return love.graphics.newSpriteBatch(spritesheet.image, self.width * self.height)
+   end)
    self:recreateSpriteBatches()
+end
+
+--- Switch tiles of type 'from' to tiles of type 'to'
+function Map:changeTiles(from, to)
+   for i = 1, #self.tiles do
+      if self.tiles[i] == from then
+         self.tiles[i] = to
+      end
+   end
 end
 
 --- Gets the tile from a specified cell

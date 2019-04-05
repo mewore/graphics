@@ -31,6 +31,7 @@ function MapEncoder:saveToFile(filename, map)
       width = map.width,
       height = map.height,
       points = map.points,
+      tileOrder = map.tileOrder,
    })
 
    local mapFile = NativeFile:create(filename .. ".map")

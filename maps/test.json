@@ -4,5 +4,6 @@
       {"y": 328.37264572612, "x": 4285.6991458628, "data": "", "id": ""}
    ],
    "width": 256,
-   "height": 32
+   "height": 32,
+   "tileOrder": ["default-red", "default", "simple-square"]
 }
