@@ -31,6 +31,7 @@ local SPRITE_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/sprites"
 
 local NEW_MAP_ITEM = "(+) New map"
 local NEW_TILESHEET_ITEM = "(+) New tilesheet"
+local NEW_SPRITE_ITEM = "(+) New sprite"
 
 --- The main menu
 function MainMenu:create()
@@ -71,7 +72,8 @@ function MainMenu:create()
    end
 
    local spriteDirectories = NativeFile:create(SPRITE_DIRECTORY):getDirectories()
-   local spriteItems = {}
+   local spriteTable = {}
+   local spriteItems = { { value = NEW_SPRITE_ITEM } }
    for _, spriteDirectory in ipairs(spriteDirectories) do
       local item = { label = spriteDirectory.name, value = spriteDirectory.path }
       local spriteIconFile = spriteDirectory:getChild("icon.png")
@@ -85,6 +87,7 @@ function MainMenu:create()
          item.iconQuadHeight = icon:getHeight()
       end
 
+      spriteTable[spriteDirectory.name] = true
       spriteItems[#spriteItems + 1] = item
    end
 
@@ -189,9 +192,36 @@ function MainMenu:create()
    end)
 
    spriteList:onSelect(function(value)
-      local imageEditor = SpriteEditor:create(value)
-      viewStack:pushView(imageEditor)
-      imageEditor.onClose = function() viewStack:popView(imageEditor) end
+      if value == NEW_SPRITE_ITEM then
+         local nameInput = TextInput:create(300, "Name", "", {
+            kebabCase = true,
+            validations = { function(value) return not spriteTable[value] end }
+         })
+
+         local okButton = Button:create("OK", "solid", function()
+            if not nameInput.isValid then
+               return
+            end
+
+            local directory = NativeFile:create(SPRITE_DIRECTORY .. "/" .. nameInput.value)
+            directory:createDirectory()
+
+            spriteList:addItemAndKeepSorted({ label = directory.name, value = directory.path })
+            spriteTable[nameInput.value] = true
+            viewStack:popView(self.dialog)
+            self.dialog = nil
+         end)
+         local cancelButton = Button:create("Cancel", nil, function()
+            viewStack:popView(self.dialog)
+            self.dialog = nil
+         end)
+
+         self.dialog = Dialog:create("Create a new sprite", nil, { nameInput }, { cancelButton, okButton })
+      else
+         local imageEditor = SpriteEditor:create(value)
+         viewStack:pushView(imageEditor)
+         imageEditor.onClose = function() viewStack:popView(imageEditor) end
+      end
    end)
 
    return this

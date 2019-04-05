@@ -100,6 +100,19 @@ function NativeFile:writeAsJson(contents)
    self:write(JsonEncoder:create():encode(contents))
 end
 
+--- Create a directory at this path.
+-- On SUCCESS, returns nil
+-- On FAILURE, throws an error
+function NativeFile:createDirectory()
+   local command = "mkdir \"" .. self.path .. "\""
+   local executionFile = io.popen(command, "r")
+   local output = executionFile:read("*a")
+   executionFile:close()
+   if #output > 0 then
+      error("Unexpected output when executing the command '" .. command .. "': " .. output)
+   end
+end
+
 --- Checks whether the path corresponds to a file
 -- @returns {boolean}
 function NativeFile:isFile()
