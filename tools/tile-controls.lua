@@ -85,13 +85,6 @@ local function getCircleRows(diameter)
    return circleLines
 end
 
---- Get the sign of x. If x is positive, returns +1, if x is 0, returns 0, if x is negative, returns -1.
--- @param x {number}
--- @returns {number} +1, 0 or -1
-local function sign(x)
-   return x > 0 and 1 or (x == 0 and 0 or -1)
-end
-
 --- Gets the points a circle with a specified size and coordinates, but only if they are contained within a canvas.
 -- The canvas is assumed to be a rectangle with an upper left corner (1,1) and a lower right corner (width, height)
 -- @param leftX {int}
@@ -121,75 +114,71 @@ end
 -- @param initialTopY {int}
 -- @param size {int}
 -- @param path {{x: int, y: int}[]}
--- @param width {int}
--- @param height {int}
-local function callForEachPointInPath(callback, initialLeftX, initialTopY, size, path, width, height)
+local function callForEachPointInPath(callback, initialLeftX, initialTopY, size, path)
    if not path or #path <= 1 then
       print((not path) or "The path is nil" or ("The path has only " .. #path .. " point(s)"))
       return
    end
-   local pointMap = {}
-   for y = 1, size do
-      pointMap[y] = {}
-      local lastRowEmpty = circleRowsByDiameter[size][y]
-      for x = 1, lastRowEmpty do
-         pointMap[y][x] = false
-      end
-      local lastRowFull = size - lastRowEmpty
-      for x = lastRowEmpty + 1, lastRowFull do
-         pointMap[y][x] = true
-      end
-      for x = lastRowFull + 1, size do
-         pointMap[y][x] = false
-      end
-   end
-   -- Either X/Y or both X and Y will change at a given point. If totalDx > totalDy, then if one changes it's surely X
-   -- and if totalDx < totalDy, then if one changes it's Y. And, if totalDx == totalDy, then only both will change.
-   local offsets = { {}, {} } -- offsets[1] - one coordinate has changed. offsets[2] - both coordinates have changed
-   local totalDx = path[#path].x - path[1].x
-   local totalDy = path[#path].y - path[1].y
-   if math.abs(totalDx) > math.abs(totalDy) then
-      -- X is dominant
-      for y = 1, size do
-         offsets[1][#offsets[1] + 1] = {
-            x = totalDx < 0 and (circleRowsByDiameter[size][y]) or (size - circleRowsByDiameter[size][y] - 1),
-            y = y - 1,
-         }
-      end
-   elseif math.abs(totalDy) > math.abs(totalDx) then
-      -- Y is dominant
-      for x = 1, size do
-         offsets[1][#offsets[1] + 1] = {
-            x = x - 1,
-            y = totalDy < 0 and (circleRowsByDiameter[size][x]) or (size - circleRowsByDiameter[size][x] - 1),
-         }
-      end
-   end
-   if totalDx ~= 0 and totalDy ~= 0 then
-      for y = 1, size do
-         for x = 1, size do
-            local nextY = y + sign(totalDy)
-            local nextX = x + sign(totalDx)
-            if nextY < 1 or nextY > size or nextX < 1 or nextX > size or not pointMap[nextY][nextX] then
-               offsets[2][#offsets[2] + 1] = { x = x - 1, y = y - 1 }
-            end
-         end
-      end
-   end
-   -- Finally calculate the points
    local leftX, topY = initialLeftX, initialTopY
+   local rightX, bottomY = leftX + size - 1, topY + size - 1
    for i = 2, #path do
       local points = {}
       local dx = path[i].x - path[i - 1].x
       local dy = path[i].y - path[i - 1].y
       leftX, topY = leftX + dx, topY + dy
-      local currentOffsets = offsets[(dx ~= 0 and 1 or 0) + (dy ~= 0 and 1 or 0)]
-      for i = 1, #currentOffsets do
-         local x = leftX + currentOffsets[i].x
-         local y = topY + currentOffsets[i].y
-         -- Ignore points not in the canvas
-         if x >= 1 and x <= width and y >= 1 and y <= height then
-            points[#points + 1] = { x = x, y = y }
+      rightX, bottomY = rightX + dx, bottomY + dy
+
+      local startingY, targetY, incrementY
+      if dx == 0 and dy > 0 then
+         -- Down
+         for x = 1, size do
+            points[#points + 1] = { x = leftX + x - 1, y = bottomY - circleRowsByDiameter[size][x] }
+         end
+      elseif dx == 0 and dy < 0 then
+         -- Up
+         for x = 1, size do
+            points[#points + 1] = { x = leftX + x - 1, y = topY + circleRowsByDiameter[size][x] }
+         end
+      elseif dx > 0 and dy == 0 then
+         -- Right
+         for y = 1, size do
+            points[#points + 1] = { x = rightX - circleRowsByDiameter[size][y], y = topY + y - 1 }
+         end
+      elseif dx < 0 and dy == 0 then
+         -- Left
+         for y = 1, size do
+            points[#points + 1] = { x = leftX + circleRowsByDiameter[size][y], y = topY + y - 1 }
+         end
+      else
+         -- Both X and Y have changed
+         -- Rest of the circle
+         for y = 1, size do
+            local y2 = y + dy
+            local leftmostInRow = circleRowsByDiameter[size][y] + 1
+            local rightmostInRow = size - circleRowsByDiameter[size][y]
+            if y2 < 1 or y2 > size then
+               -- All points in this row are surely worth drawing
+               for x = leftmostInRow, rightmostInRow do
+                  points[#points + 1] = { x = leftX + x - 1, y = topY + y - 1 }
+               end
+            else
+               local minXToTryOnRightToLeft = 1
+               for x = leftmostInRow, rightmostInRow do
+                  minXToTryOnRightToLeft = x + 1
+                  local x2 = x + dx
+                  if x2 > circleRowsByDiameter[size][y2] and x2 <= size - circleRowsByDiameter[size][y2] then
+                     break
+                  end
+                  points[#points + 1] = { x = leftX + x - 1, y = topY + y - 1 }
+               end
+               for x = rightmostInRow, minXToTryOnRightToLeft, -1 do
+                  local x2 = x + dx
+                  if x2 > circleRowsByDiameter[size][y2] and x2 <= size - circleRowsByDiameter[size][y2] then
+                     break
+                  end
+                  points[#points + 1] = { x = leftX + x - 1, y = topY + y - 1 }
+               end
+            end
          end
       end
       callback(points)
@@ -229,8 +218,7 @@ function TileControls:update()
          local drawPath = mathUtils:getDiscreteLine(self.lastMouseDownPosition.x, self.lastMouseDownPosition.y,
             self.leftHoveredColumn, self.topHoveredRow)
          callForEachPointInPath(function(points) self.drawProgressHandler(points, self.drawingWith) end,
-            self.lastMouseDownPosition.x, self.lastMouseDownPosition.y, self.size, drawPath,
-            self.canvasWidth, self.canvasHeight)
+            self.lastMouseDownPosition.x, self.lastMouseDownPosition.y, self.size, drawPath)
       end
 
       self.drawDoneHandler()
