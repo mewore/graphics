@@ -1,4 +1,6 @@
 require "controls/colour-picker"
+require "controls/label"
+require "controls/list"
 require "controls/paint-display"
 require "tools/tile-controls"
 require "data/native-file"
@@ -23,18 +25,15 @@ local CHECKERBOARD_VALUE = 0.8
 local TOOL_PIXEL_EDITOR = 1
 local TOOL_PIPETTE = 2
 
+local SIDEBAR_WIDTH = 200
+
 --- Displays a map and allows the user to edit it
 -- @param spriteDirectory {string} - The directory containing the sprite images
 function SpriteEditor:create(spriteDirectory)
-   local images = NativeFile:create(spriteDirectory):getFiles("png")
-   if #images == 0 then
+   local imageFiles = NativeFile:create(spriteDirectory):getFiles("png")
+   if #imageFiles == 0 then
       error("There are no images in " .. spriteDirectory .. " and image creation is not supported yet")
    end
-   local file = images[1]
-   local fileData = love.filesystem.newFileData(file:read(), file.path)
-   local imageData = love.image.newImageData(fileData)
-   local width = imageData:getWidth()
-   local height = imageData:getHeight()
 
    local mainColour = { r = 0, g = 0, b = 0, a = 1 }
    local secondaryColour = { r = 0, g = 0, b = 0, a = 1 }
@@ -44,22 +43,36 @@ function SpriteEditor:create(spriteDirectory)
       love.graphics.rectangle("fill", x, y, width, height)
    end, ColourPicker:create())
 
-   local navigator = Navigator:create(width * TILE_WIDTH, height * TILE_HEIGHT)
+   local animationListLabel = Label:create("Animations/Images")
+   animationListLabel.marginTop = 40
+   local animationListItems = {}
+   for _, imageFile in ipairs(imageFiles) do
+      animationListItems[#animationListItems + 1] = { value = imageFile.path, label = imageFile.name }
+   end
+   local animationList = List:create(0, 0, SIDEBAR_WIDTH, animationListItems)
+
+   local navigator = Navigator:create()
    local this = {
-      filename = file.path,
-      imageData = imageData,
-      imageWidth = width,
-      imageHeight = height,
+      filename = nil,
+      imageData = nil,
+      imageWidth = nil,
+      imageHeight = nil,
       activeTool = TOOL_PIXEL_EDITOR,
       tools = {
-         [TOOL_PIXEL_EDITOR] = TileControls:create(WHITE, TILE_WIDTH, TILE_HEIGHT, width, height, navigator, false),
-         [TOOL_PIPETTE] = TileControls:create(WHITE, TILE_WIDTH, TILE_HEIGHT, width, height, navigator, false),
+         [TOOL_PIXEL_EDITOR] = TileControls:create(WHITE, TILE_WIDTH, TILE_HEIGHT, nil, nil, navigator, false),
+         [TOOL_PIPETTE] = TileControls:create(WHITE, TILE_WIDTH, TILE_HEIGHT, nil, nil, navigator, false),
       },
       navigator = navigator,
-      sidebar = Sidebar:create({ paintDisplay }),
+      sidebar = Sidebar:create({ paintDisplay, animationListLabel, animationList }, SIDEBAR_WIDTH),
       onSave = function() end,
    }
    setmetatable(this, self)
+
+   this:openImage(imageFiles[1].path)
+
+   animationList:onSelect(function(value)
+      this:openImage(value)
+   end)
 
    this.tools[TOOL_PIXEL_EDITOR]:onDrawProgress(function(points, button)
       local colour = button == LEFT_MOUSE_BUTTON and paintDisplay.front.value or paintDisplay.back.value
@@ -75,6 +88,26 @@ function SpriteEditor:create(spriteDirectory)
    end)
 
    return this
+end
+
+--- Open an image/animation from a specific path
+-- @param filePath {string} The image path
+function SpriteEditor:openImage(filePath)
+   local file = NativeFile:create(filePath)
+   local fileData = love.filesystem.newFileData(file:read(), file.path)
+   local imageData = love.image.newImageData(fileData)
+   local width = imageData:getWidth()
+   local height = imageData:getHeight()
+
+   self.filename = filePath
+   self.imageWidth = width
+   self.imageHeight = height
+   self.imageData = imageData
+   self.navigator:setDimensionsAndReposition(width * TILE_WIDTH, height * TILE_HEIGHT)
+
+   for _, tool in pairs(self.tools) do
+      tool:setCanvasDimensions(width, height)
+   end
 end
 
 --- LOVE update handler

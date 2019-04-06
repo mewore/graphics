@@ -28,6 +28,9 @@ function List:create(x, y, width, items, options)
       selectCallbacks = {},
       iconSize = options.iconSize or DEFAULT_ICON_SIZE,
       hasIcons = false,
+      height = 0,
+      lastY = y,
+      isActive = false,
    }
    setmetatable(this, self)
 
@@ -61,9 +64,19 @@ end
 
 --- LOVE update handler
 function List:update()
+   if self.lastY ~= self.y then
+      local dy = self.y - self.lastY
+      for _, item in ipairs(self.items) do
+         item.y, item.textY = item.y + dy, item.textY + dy
+      end
+      self.lastY = self.y
+   end
+
+   self.isActive = false
    for _, item in ipairs(self.items) do
       local mouseInfo = love.mouse.registerSolid(item)
       item.isHovered = mouseInfo.isHovered
+      self.isActive = self.isActive or item.isHovered
 
       if mouseInfo.isHovered and #self.selectCallbacks > 0 then
          love.mouse.cursor = HOVER_CURSOR
@@ -95,6 +108,7 @@ end
 -- @param newWidth {number} The new width
 function List:setWidth(newWidth)
    self.width = newWidth
+   self.height = 0
 
    local currentY = self.y
    for _, item in ipairs(self.items) do
@@ -109,6 +123,7 @@ function List:setWidth(newWidth)
       item.width = newWidth
       item.textY = item.y + math.floor((item.height - item.text:getHeight()) / 2)
       currentY = currentY + item.height
+      self.height = self.height + item.height
    end
 end
 

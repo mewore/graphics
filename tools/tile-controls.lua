@@ -196,11 +196,18 @@ local function callForEachPointInPath(callback, initialLeftX, initialTopY, size,
    end
 end
 
+--- Set the canvas dimensions to new values
+-- @param canvasWidth {int} The new width (number of tiles)
+-- @param canvasHeight {int} The new height (number of tiles)
+function TileControls:setCanvasDimensions(canvasWidth, canvasHeight)
+   self.canvasWidth, self.canvasHeight = canvasWidth, canvasHeight
+end
+
 --- LOVE update handler
 function TileControls:update()
    local mouseInfo = love.mouse.registerSolid(self, { isWholeScreen = true })
    self.invisible = not mouseInfo.isHovered
-   if self.invisible then
+   if self.invisible or self.canvasWidth == nil or self.canvasHeight == nil then
       return
    end
 

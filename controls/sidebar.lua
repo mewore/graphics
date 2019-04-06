@@ -8,6 +8,8 @@ local VALUE = 0.2
 local OPACITY_DIFFERENCE_HALVING_PERIOD = 0.1 -- How long until the opacity reaches 0.5, then 0.75, 0.875, etc. to its desired value [s]
 local PADDING_TOP = 10
 
+local MIN_MARGIN = 5
+
 --- A controller that keeps track of an X and Y offset as well as a zoom ratio
 function Sidebar:create(controls, width)
    width = width or WIDTH
@@ -17,7 +19,7 @@ function Sidebar:create(controls, width)
       controls[i].y = y
       controls[i].x = math.floor((width - controls[i].width) / 2)
       if i < #controls then
-         y = y + controls[i].height + math.min(controls[i].marginBottom or 0, controls[i + 1].marginTop or 0)
+         y = y + controls[i].height + math.max(controls[i].marginBottom or 0, controls[i + 1].marginTop or 0, MIN_MARGIN)
       end
    end
 

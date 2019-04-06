@@ -19,17 +19,16 @@ local INITIAL_ZOOM_MULTIPLIER = 0.95
 
 --- A controller that keeps track of an X and Y offset as well as a zoom ratio
 function Navigator:create(canvasWidth, canvasHeight)
-   local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
-   local zoom = math.min(screenWidth / canvasWidth, screenHeight / canvasHeight) * INITIAL_ZOOM_MULTIPLIER
    local this = {
       x = 0,
       y = 0,
-      zoom = zoom,
+      zoom = 1,
    }
    setmetatable(this, self)
 
-   local rightX, bottomY = this:screenToAbsolute(screenWidth, screenHeight)
-   this.x, this.y = -math.floor((rightX - canvasWidth) / 2), -math.floor((bottomY - canvasHeight) / 2)
+   if canvasWidth ~= nil and canvasHeight ~= nil then
+      this:setDimensionsAndReposition(canvasWidth, canvasHeight)
+   end
 
    return this
 end
@@ -69,6 +68,18 @@ function Navigator:update(dt)
          self.y = self.y - newAbsoluteMouseY + oldAbsoluteMouseY
       end
    end
+end
+
+--- Set the canvas width and height and re-center the navigator to it
+-- @param canvasWidth {int} The canvas width
+-- @param canvasHeight {int} The canvas height
+function Navigator:setDimensionsAndReposition(canvasWidth, canvasHeight)
+   local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
+   self.zoom = math.min(screenWidth / canvasWidth, screenHeight / canvasHeight) * INITIAL_ZOOM_MULTIPLIER
+
+   self.x, self.y = 0, 0
+   local rightX, bottomY = self:screenToAbsolute(screenWidth, screenHeight)
+   self.x, self.y = -math.floor((rightX - canvasWidth) / 2), -math.floor((bottomY - canvasHeight) / 2)
 end
 
 --- Convert screen (x, y) coordinates to absolute ones
