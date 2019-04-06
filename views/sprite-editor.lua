@@ -27,13 +27,13 @@ local TOOL_PIPETTE = 2
 
 local SIDEBAR_WIDTH = 200
 
+local NEW_ANIMATION_ITEM = "(+) New animation"
+
 --- Displays a map and allows the user to edit it
 -- @param spriteDirectory {string} - The directory containing the sprite images
 function SpriteEditor:create(spriteDirectory)
    local imageFiles = NativeFile:create(spriteDirectory):getFiles("png")
-   if #imageFiles == 0 then
-      error("There are no images in " .. spriteDirectory .. " and image creation is not supported yet")
-   end
+   local fileNameTable = {}
 
    local mainColour = { r = 0, g = 0, b = 0, a = 1 }
    local secondaryColour = { r = 0, g = 0, b = 0, a = 1 }
@@ -45,9 +45,10 @@ function SpriteEditor:create(spriteDirectory)
 
    local animationListLabel = Label:create("Animations/Images")
    animationListLabel.marginTop = 40
-   local animationListItems = {}
+   local animationListItems = { { value = NEW_ANIMATION_ITEM } }
    for _, imageFile in ipairs(imageFiles) do
       animationListItems[#animationListItems + 1] = { value = imageFile.path, label = imageFile.name }
+      fileNameTable[imageFile.name] = true
    end
    local animationList = List:create(0, 0, SIDEBAR_WIDTH, animationListItems)
 
@@ -68,10 +69,47 @@ function SpriteEditor:create(spriteDirectory)
    }
    setmetatable(this, self)
 
-   this:openImage(imageFiles[1].path)
+   if #imageFiles > 0 then
+      this:openImage(imageFiles[1].path)
+   end
 
    animationList:onSelect(function(value)
-      this:openImage(value)
+      if value == NEW_ANIMATION_ITEM then
+         local nameInput = TextInput:create(300, "Name", "", {
+            kebabCase = true,
+            validations = { function(value) return not fileNameTable[value] end }
+         })
+         local sizeInput = TextInput:create(50, "Size", "32", { positive = true, integer = true })
+
+         local okButton = Button:create("OK", "solid", function()
+            if not (nameInput.isValid and sizeInput.isValid) then
+               return
+            end
+
+            local size = tonumber(sizeInput.value)
+            local pngFileData = love.image.newImageData(size, size)
+            for y = 0, size - 1 do
+               for x = 0, size - 1 do
+                  pngFileData:setPixel(x, y, 0, 0, 0, 0)
+               end
+            end
+            local pngFilePath = spriteDirectory .. "/" .. nameInput.value .. ".png"
+            NativeFile:create(pngFilePath):write(pngFileData:encode("png"):getString())
+            animationList:addItemAndKeepSorted({ label = nameInput.value, value = pngFilePath })
+
+            viewStack:popView(self.dialog)
+            self.dialog = nil
+         end)
+         local cancelButton = Button:create("Cancel", nil, function()
+            viewStack:popView(self.dialog)
+            self.dialog = nil
+         end)
+
+         self.dialog = Dialog:create("Create a new animation", nil,
+            { nameInput, sizeInput }, { cancelButton, okButton })
+      else
+         this:openImage(value)
+      end
    end)
 
    this.tools[TOOL_PIXEL_EDITOR]:onDrawProgress(function(points, button)
@@ -184,6 +222,11 @@ end
 function SpriteEditor:draw()
    -- Gray border
    love.graphics.clear(BORDER_VALUE, BORDER_VALUE, BORDER_VALUE)
+
+   if not self.imageData then
+      self.sidebar:draw()
+      return
+   end
 
    love.graphics.push()
    self.navigator:scaleAndTranslate()
