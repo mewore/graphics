@@ -114,7 +114,9 @@ end
 -- @param initialTopY {int}
 -- @param size {int}
 -- @param path {{x: int, y: int}[]}
-local function callForEachPointInPath(callback, initialLeftX, initialTopY, size, path)
+-- @param width {int} The canvas width.
+-- @param height {int} The canvas height.
+local function callForEachPointInPath(callback, initialLeftX, initialTopY, size, path, width, height)
    if not path or #path <= 1 then
       print((not path) or "The path is nil" or ("The path has only " .. #path .. " point(s)"))
       return
@@ -129,40 +131,73 @@ local function callForEachPointInPath(callback, initialLeftX, initialTopY, size,
       rightX, bottomY = rightX + dx, bottomY + dy
 
       local startingY, targetY, incrementY
-      if dx == 0 and dy > 0 then
-         -- Down
-         for x = 1, size do
-            points[#points + 1] = { x = leftX + x - 1, y = bottomY - circleRowsByDiameter[size][x] }
-         end
-      elseif dx == 0 and dy < 0 then
-         -- Up
-         for x = 1, size do
-            points[#points + 1] = { x = leftX + x - 1, y = topY + circleRowsByDiameter[size][x] }
+      if dx == 0 then
+         -- Vertical (up/down)
+         local limitXFrom = math.max(1, 2 - leftX)
+         local limitXTo = math.min(size, width + 1 - leftX)
+         if dy > 0 then
+            -- Down
+            for x = limitXFrom, limitXTo do
+               local pointX, pointY = leftX + x - 1, bottomY - circleRowsByDiameter[size][x]
+               if pointY >= 1 and pointY <= height then
+                  points[#points + 1] = { x = pointX, y = pointY }
+               end
+            end
+         else
+            -- Up
+            for x = limitXFrom, limitXTo do
+               local pointX, pointY = leftX + x - 1, topY + circleRowsByDiameter[size][x]
+               if pointY >= 1 and pointY <= height then
+                  points[#points + 1] = { x = pointX, y = pointY }
+               end
+            end
          end
       elseif dx > 0 and dy == 0 then
-         -- Right
-         for y = 1, size do
-            points[#points + 1] = { x = rightX - circleRowsByDiameter[size][y], y = topY + y - 1 }
+         -- Horizontal (left/right)
+         local limitYFrom = math.max(1, 2 - topY)
+         local limitYTo = math.min(size, height + 1 - topY)
+         if dx > 0 then
+            -- Right
+            for y = limitYFrom, limitYTo do
+               local pointX, pointY = rightX - circleRowsByDiameter[size][y], topY + y - 1
+               if pointX >= 1 and pointX <= width then
+                  points[#points + 1] = { x = pointX, y = pointY }
+               end
+            end
+         else
+            -- Left
+            for y = limitYFrom, limitYTo do
+               local pointX, pointY = leftX + circleRowsByDiameter[size][y], topY + y - 1
+               if pointX >= 1 and pointX <= width then
+                  points[#points + 1] = { x = pointX, y = pointY }
+               end
+            end
          end
       elseif dx < 0 and dy == 0 then
          -- Left
-         for y = 1, size do
-            points[#points + 1] = { x = leftX + circleRowsByDiameter[size][y], y = topY + y - 1 }
+         local limitYFrom = math.max(1, 2 - topY)
+         local limitYTo = math.min(size, height + 1 - topY)
+         for y = limitYFrom, limitYTo do
+            local pointX, pointY = leftX + circleRowsByDiameter[size][y], topY + y - 1
+            if pointX >= 1 and pointX <= width then
+               points[#points + 1] = { x = pointX, y = pointY }
+            end
          end
       else
          -- Both X and Y have changed
          -- Rest of the circle
-         for y = 1, size do
+         local yFrom, yTo = math.max(1, 2 - topY), math.min(size, height + 1 - topY)
+         for y = yFrom, yTo do
             local y2 = y + dy
-            local leftmostInRow = circleRowsByDiameter[size][y] + 1
-            local rightmostInRow = size - circleRowsByDiameter[size][y]
+            local leftmostInRow = math.max(circleRowsByDiameter[size][y] + 1, 2 - leftX)
+            local rightmostInRow = math.min(size - circleRowsByDiameter[size][y], width + 1 - leftX)
             if y2 < 1 or y2 > size then
                -- All points in this row are surely worth drawing
                for x = leftmostInRow, rightmostInRow do
                   points[#points + 1] = { x = leftX + x - 1, y = topY + y - 1 }
                end
             else
-               local minXToTryOnRightToLeft = 1
+               local minXToTryOnRightToLeft = leftmostInRow
                for x = leftmostInRow, rightmostInRow do
                   minXToTryOnRightToLeft = x + 1
                   local x2 = x + dx
@@ -218,7 +253,8 @@ function TileControls:update()
          local drawPath = mathUtils:getDiscreteLine(self.lastMouseDownPosition.x, self.lastMouseDownPosition.y,
             self.leftHoveredColumn, self.topHoveredRow)
          callForEachPointInPath(function(points) self.drawProgressHandler(points, self.drawingWith) end,
-            self.lastMouseDownPosition.x, self.lastMouseDownPosition.y, self.size, drawPath)
+            self.lastMouseDownPosition.x, self.lastMouseDownPosition.y, self.size, drawPath,
+            self.canvasWidth, self.canvasHeight)
       end
 
       self.drawDoneHandler()
