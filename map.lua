@@ -90,7 +90,7 @@ function Map:loadFrom(file)
    self.height = data.height
    self.tiles = data.tiles
    self.points = data.points
-   self.tileOrder = data.tileOrder
+   self.tileOrder = data.tileOrder or {}
 
    -- Reorder the spritesheets(tilesheets) as their order has been defined in tileOrder
    local spritesheetMap = {}

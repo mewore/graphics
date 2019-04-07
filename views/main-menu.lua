@@ -33,6 +33,13 @@ local NEW_MAP_ITEM = "(+) New map"
 local NEW_TILESHEET_ITEM = "(+) New tilesheet"
 local NEW_SPRITE_ITEM = "(+) New sprite"
 
+--- Open an editor at the top of the view stack and remove it when it is closed
+-- @param editor The editor to open
+local function openEditor(editor)
+   viewStack:pushView(editor)
+   editor.onClose = function() viewStack:popView(editor) end
+end
+
 --- The main menu
 function MainMenu:create()
    local mapFiles = NativeFile:create(MAP_DIRECTORY):getFiles("map")
@@ -129,6 +136,7 @@ function MainMenu:create()
             mapList:addItemAndKeepSorted({ value = nameInput.value })
             viewStack:popView(self.dialog)
             self.dialog = nil
+            openEditor(MapEditor:create(MAP_DIRECTORY .. "/" .. nameInput.value, TILESHEET_DIRECTORY))
          end)
          local cancelButton = Button:create("Cancel", nil, function()
             viewStack:popView(self.dialog)
@@ -138,9 +146,7 @@ function MainMenu:create()
          self.dialog = Dialog:create("Create a new map", "What should the name of the map be?",
             { nameInput, widthInput, heightInput }, { cancelButton, okButton })
       else
-         local mapEditor = MapEditor:create(MAP_DIRECTORY .. "/" .. value, TILESHEET_DIRECTORY)
-         viewStack:pushView(mapEditor)
-         mapEditor.onClose = function() viewStack:popView(mapEditor) end
+         openEditor(MapEditor:create(MAP_DIRECTORY .. "/" .. value, TILESHEET_DIRECTORY))
       end
    end)
 
@@ -176,6 +182,7 @@ function MainMenu:create()
 
             viewStack:popView(self.dialog)
             self.dialog = nil
+            openEditor(ImageEditor:create(pngFilePath))
          end)
          local cancelButton = Button:create("Cancel", nil, function()
             viewStack:popView(self.dialog)
@@ -185,9 +192,7 @@ function MainMenu:create()
          self.dialog = Dialog:create("Create a new tilesheet", nil,
             { nameInput, widthInput, heightInput }, { cancelButton, okButton })
       else
-         local imageEditor = ImageEditor:create(value)
-         viewStack:pushView(imageEditor)
-         imageEditor.onClose = function() viewStack:popView(imageEditor) end
+         openEditor(ImageEditor:create(value))
       end
    end)
 
@@ -210,6 +215,7 @@ function MainMenu:create()
             spriteTable[nameInput.value] = true
             viewStack:popView(self.dialog)
             self.dialog = nil
+            openEditor(SpriteEditor:create(directory.path))
          end)
          local cancelButton = Button:create("Cancel", nil, function()
             viewStack:popView(self.dialog)
@@ -218,9 +224,7 @@ function MainMenu:create()
 
          self.dialog = Dialog:create("Create a new sprite", nil, { nameInput }, { cancelButton, okButton })
       else
-         local imageEditor = SpriteEditor:create(value)
-         viewStack:pushView(imageEditor)
-         imageEditor.onClose = function() viewStack:popView(imageEditor) end
+         openEditor(SpriteEditor:create(value))
       end
    end)
 
