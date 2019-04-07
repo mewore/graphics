@@ -61,6 +61,7 @@ function TextInput:create(width, placeholder, initialValue, options)
       isHovered = false,
       isValid = true,
       validations = options.validations or {},
+      caretIndex = 0,
    }
    setmetatable(this, self)
 
@@ -91,14 +92,41 @@ function TextInput:update()
 
    if mouseInfo.clicksPerButton[1] or mouseInfo.clicksPerButton[2] then
       love.keyboard.focus(self)
+      self.caretIndex = #self.value
    end
 
    if love.keyboard.focusedOnto == self then
+      -- Typing
       if #love.keyboard.input > 0 then
-         self:setValue(self.value .. love.keyboard.input)
+         self:setValue(string.sub(self.value, 1, self.caretIndex) ..
+               love.keyboard.input ..
+               string.sub(self.value, self.caretIndex + 1))
+         self.caretIndex = self.caretIndex + #love.keyboard.input
       end
+
+      -- Caret movement
+      if love.keyboard.keysPressed["left"] then
+         self.caretIndex = math.max(self.caretIndex - 1, 0)
+      end
+      if love.keyboard.keysPressed["right"] then
+         self.caretIndex = math.min(self.caretIndex + 1, #self.value)
+      end
+      if love.keyboard.keysPressed["up"] then
+         self.caretIndex = 0
+      end
+      if love.keyboard.keysPressed["down"] then
+         self.caretIndex = #self.value
+      end
+
+      -- Deletion
       if love.keyboard.keysPressed["backspace"] then
-         self:setValue(string.sub(self.value, 1, #self.value - 1))
+         self:setValue(string.sub(self.value, 1, self.caretIndex - 1) ..
+               string.sub(self.value, self.caretIndex + 1))
+         self.caretIndex = math.max(self.caretIndex - 1, 0)
+      end
+      if love.keyboard.keysPressed["delete"] then
+         self:setValue(string.sub(self.value, 1, self.caretIndex) ..
+               string.sub(self.value, self.caretIndex + 2))
       end
    end
 
@@ -145,7 +173,7 @@ function TextInput:draw()
    if love.keyboard.focusedOnto == self and
          math.floor((love.timer.getTime() - love.keyboard.focusedSince) / BLINKER_INTERVAL) % 2 == 0 then
       setColour(TEXT_COLOUR)
-      local x = self.x + TEXT_PADDING_LEFT + (self.text ~= nil and self.text:getWidth() or 0)
+      local x = self.x + TEXT_PADDING_LEFT + (TEXT_FONT:getWidth(string.sub(self.value, 1, self.caretIndex)))
       local topY = self.y + TEXT_PADDING_TOP
       love.graphics.line(x, topY, x, topY + TEXT_FONT_SIZE)
    end
