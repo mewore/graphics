@@ -131,7 +131,9 @@ function TextInput:update()
 
       -- Caret movement
       if love.keyboard.keysPressed["left"] then
-         if self:hasSelectedText() then
+         if love.keyboard.shiftIsDown then
+            self.caretIndex = math.max(self.caretIndex - 1, 0)
+         elseif self:hasSelectedText() then
             self.caretIndex = math.min(self.caretIndex, self.selectionFromIndex)
             self.selectionFromIndex = self.caretIndex
          else
@@ -140,7 +142,9 @@ function TextInput:update()
          end
       end
       if love.keyboard.keysPressed["right"] then
-         if self:hasSelectedText() then
+         if love.keyboard.shiftIsDown then
+            self.caretIndex = math.min(self.caretIndex + 1, #self.value)
+         elseif self:hasSelectedText() then
             self.caretIndex = math.max(self.caretIndex, self.selectionFromIndex)
             self.selectionFromIndex = self.caretIndex
          else
@@ -150,11 +154,15 @@ function TextInput:update()
       end
       if love.keyboard.keysPressed["up"] then
          self.caretIndex = 0
-         self.selectionFromIndex = self.caretIndex
+         if not love.keyboard.shiftIsDown then
+            self.selectionFromIndex = self.caretIndex
+         end
       end
       if love.keyboard.keysPressed["down"] then
          self.caretIndex = #self.value
-         self.selectionFromIndex = self.caretIndex
+         if not love.keyboard.shiftIsDown then
+            self.selectionFromIndex = self.caretIndex
+         end
       end
 
       -- Deletion
