@@ -31,6 +31,7 @@ function List:create(x, y, width, items, options)
       height = 0,
       lastY = y,
       isActive = false,
+      selectedItem = nil,
    }
    setmetatable(this, self)
 
@@ -143,11 +144,24 @@ function List:addItemAndKeepSorted(newItem)
    self:setWidth(self.width)
 end
 
+--- Mark an item as select
+-- @param itemToSelect {table | string} The item or value to select.
+function List:select(itemToSelect)
+   self.selectedItem = nil
+   for index, item in ipairs(self.items) do
+      if item == itemToSelect or item.value == itemToSelect then
+         self.selectedItem = index
+         return
+      end
+   end
+end
+
 --- LOVE draw handler
 function List:draw()
-   for _, item in ipairs(self.items) do
-      if item.isHovered then
-         love.graphics.setColor(1, 1, 1, 0.1)
+   for index, item in ipairs(self.items) do
+      local backgroundRectangleOpacity = math.max(self.selectedItem == index and 0.2 or 0, item.isHovered and 0.1 or 0)
+      if backgroundRectangleOpacity > 0 then
+         love.graphics.setColor(1, 1, 1, backgroundRectangleOpacity)
          love.graphics.rectangle("fill", item.x, item.y, item.width, item.height)
          love.graphics.reset()
       end

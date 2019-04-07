@@ -66,6 +66,7 @@ function SpriteEditor:create(spriteDirectory)
       navigator = navigator,
       sidebar = Sidebar:create({ paintDisplay, animationListLabel, animationList }, SIDEBAR_WIDTH),
       onSave = function() end,
+      animationList = animationList,
    }
    setmetatable(this, self)
 
@@ -143,6 +144,7 @@ function SpriteEditor:openImage(filePath)
    self.imageHeight = height
    self.imageData = imageData
    self.navigator:setDimensionsAndReposition(width * TILE_WIDTH, height * TILE_HEIGHT)
+   self.animationList:select(filePath)
 
    for _, tool in pairs(self.tools) do
       tool:setCanvasDimensions(width, height)
