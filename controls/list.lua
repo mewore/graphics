@@ -74,12 +74,12 @@ function List:update()
    end
 
    self.isActive = false
-   for _, item in ipairs(self.items) do
+   for index, item in ipairs(self.items) do
       local mouseInfo = love.mouse.registerSolid(item)
       item.isHovered = mouseInfo.isHovered
       self.isActive = self.isActive or item.isHovered
 
-      if mouseInfo.isHovered and #self.selectCallbacks > 0 then
+      if self.selectedItem ~= index and mouseInfo.isHovered and #self.selectCallbacks > 0 then
          love.mouse.cursor = HOVER_CURSOR
          if mouseInfo.dragConfirmed then
             for _, callback in ipairs(self.selectCallbacks) do
@@ -159,7 +159,7 @@ end
 --- LOVE draw handler
 function List:draw()
    for index, item in ipairs(self.items) do
-      local backgroundRectangleOpacity = math.max(self.selectedItem == index and 0.2 or 0, item.isHovered and 0.1 or 0)
+      local backgroundRectangleOpacity = (self.selectedItem == index and 0.2 or (item.isHovered and 0.1 or 0))
       if backgroundRectangleOpacity > 0 then
          love.graphics.setColor(1, 1, 1, backgroundRectangleOpacity)
          love.graphics.rectangle("fill", item.x, item.y, item.width, item.height)
