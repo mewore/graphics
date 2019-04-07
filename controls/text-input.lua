@@ -63,6 +63,7 @@ function TextInput:create(width, placeholder, initialValue, options)
       isValid = true,
       validations = options.validations or {},
       caretIndex = 0,
+      selectionFromIndex = 0,
    }
    setmetatable(this, self)
 
@@ -87,59 +88,91 @@ function TextInput:create(width, placeholder, initialValue, options)
    return this
 end
 
+local function getClickedIndex(text, relativeMouseX)
+   relativeMouseX = relativeMouseX + HOVER_CURSOR_HALF_WIDTH
+   local from, to = 0, #text
+   local closestIndex, closestDistance, mid
+   while from <= to do
+      mid = math.floor((from + to) / 2)
+      local x = TEXT_FONT:getWidth(string.sub(text, 1, mid))
+      local distance = math.abs(relativeMouseX - x)
+      if closestIndex == nil or distance < closestDistance then
+         closestIndex, closestDistance = mid, distance
+      end
+      if relativeMouseX < x then to = mid - 1 else from = mid + 1 end
+   end
+   return closestIndex
+end
+
 --- LOVE update handler
 function TextInput:update()
    local mouseInfo = love.mouse.registerSolid(self)
 
-   local mouseClicks = mouseInfo.clicksPerButton[1] or mouseInfo.clicksPerButton[2]
-   if mouseClicks then
-      local clickX = mouseClicks[1].x + HOVER_CURSOR_HALF_WIDTH
+   if mouseInfo.dragStarted then
       love.keyboard.focus(self)
-      local from, to = 0, #self.value
-      local closestDistance, mid
-      while from <= to do
-         mid = math.floor((from + to) / 2)
-         local x = self.x + TEXT_PADDING_LEFT + TEXT_FONT:getWidth(string.sub(self.value, 1, mid))
-         local distance = math.abs(clickX - x)
-         if closestDistance == nil or distance < closestDistance then
-            self.caretIndex, closestDistance = mid, distance
-         end
-         if clickX < x then to = mid - 1 else from = mid + 1 end
-      end
+      self.selectionFromIndex = getClickedIndex(self.value, mouseInfo.drag.fromX - self.x - TEXT_PADDING_LEFT)
+   end
+   if mouseInfo.drag then
+      self.caretIndex = getClickedIndex(self.value, mouseInfo.drag.toX - self.x - TEXT_PADDING_LEFT)
    end
 
    if love.keyboard.focusedOnto == self then
       -- Typing
       if #love.keyboard.input > 0 then
+         if self:hasSelectedText() then
+            self:deleteSelectedText()
+         end
          self:setValue(string.sub(self.value, 1, self.caretIndex) ..
                love.keyboard.input ..
                string.sub(self.value, self.caretIndex + 1))
          self.caretIndex = self.caretIndex + #love.keyboard.input
+         self.selectionFromIndex = self.caretIndex
       end
 
       -- Caret movement
       if love.keyboard.keysPressed["left"] then
-         self.caretIndex = math.max(self.caretIndex - 1, 0)
+         if self:hasSelectedText() then
+            self.caretIndex = math.min(self.caretIndex, self.selectionFromIndex)
+            self.selectionFromIndex = self.caretIndex
+         else
+            self.caretIndex = math.max(self.caretIndex - 1, 0)
+            self.selectionFromIndex = self.caretIndex
+         end
       end
       if love.keyboard.keysPressed["right"] then
-         self.caretIndex = math.min(self.caretIndex + 1, #self.value)
+         if self:hasSelectedText() then
+            self.caretIndex = math.max(self.caretIndex, self.selectionFromIndex)
+            self.selectionFromIndex = self.caretIndex
+         else
+            self.caretIndex = math.min(self.caretIndex + 1, #self.value)
+            self.selectionFromIndex = self.caretIndex
+         end
       end
       if love.keyboard.keysPressed["up"] then
          self.caretIndex = 0
+         self.selectionFromIndex = self.caretIndex
       end
       if love.keyboard.keysPressed["down"] then
          self.caretIndex = #self.value
+         self.selectionFromIndex = self.caretIndex
       end
 
       -- Deletion
       if love.keyboard.keysPressed["backspace"] then
-         self:setValue(string.sub(self.value, 1, self.caretIndex - 1) ..
-               string.sub(self.value, self.caretIndex + 1))
-         self.caretIndex = math.max(self.caretIndex - 1, 0)
+         if self:hasSelectedText() then
+            self:deleteSelectedText()
+         else
+            self:setValue(string.sub(self.value, 1, self.caretIndex - 1) .. string.sub(self.value, self.caretIndex + 1))
+            self.caretIndex = math.max(self.caretIndex - 1, 0)
+            self.selectionFromIndex = self.caretIndex
+         end
       end
       if love.keyboard.keysPressed["delete"] then
-         self:setValue(string.sub(self.value, 1, self.caretIndex) ..
-               string.sub(self.value, self.caretIndex + 2))
+         if self:hasSelectedText() then
+            self:deleteSelectedText()
+         else
+            self:setValue(string.sub(self.value, 1, self.caretIndex) .. string.sub(self.value, self.caretIndex + 2))
+         end
       end
    end
 
@@ -147,6 +180,20 @@ function TextInput:update()
    if self.isHovered then
       love.mouse.cursor = HOVER_CURSOR
    end
+end
+
+--- Returns whether there is any selected text (i.e. a non-zero-length selection).
+-- @return {boolean}
+function TextInput:hasSelectedText()
+   return self.caretIndex ~= self.selectionFromIndex
+end
+
+--- Deletes all text that is selected. If none is selected, nothing happens.
+function TextInput:deleteSelectedText()
+   local selectionFrom = math.min(self.caretIndex, self.selectionFromIndex)
+   local selectionTo = math.max(self.caretIndex, self.selectionFromIndex)
+   self:setValue(string.sub(self.value, 1, selectionFrom) .. string.sub(self.value, selectionTo + 1))
+   self.caretIndex, self.selectionFromIndex = selectionFrom, selectionFrom
 end
 
 function TextInput:setValue(newValue)
@@ -173,6 +220,16 @@ function TextInput:draw()
    if love.keyboard.focusedOnto ~= self and not self.isHovered then
       setColour(BOX_NOT_FOCUSED_OR_HOVER_FILL_COLOUR)
       love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, BORDER_RADIUS, BORDER_RADIUS)
+   end
+
+   if love.keyboard.focusedOnto == self and self.selectionFromIndex ~= self.caretIndex then
+      local x1 = self.x + TEXT_PADDING_LEFT + TEXT_FONT:getWidth(string.sub(self.value, 1, self.caretIndex))
+      local x2 = self.x + TEXT_PADDING_LEFT + TEXT_FONT:getWidth(string.sub(self.value, 1, self.selectionFromIndex))
+      local xFrom, xTo = math.min(x1, x2), math.max(x1, x2)
+      local topY = self.y + TEXT_PADDING_TOP
+      love.graphics.setColor(0.2, 0.6, 1)
+      love.graphics.rectangle("fill", xFrom, topY, xTo - xFrom, TEXT_FONT_SIZE)
+      love.graphics.reset()
    end
 
    if self.value and #self.value > 0 then
