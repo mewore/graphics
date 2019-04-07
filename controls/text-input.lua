@@ -165,6 +165,10 @@ function TextInput:update()
          end
       end
 
+      if love.keyboard.keysPressed["a"] and love.keyboard.controlIsDown then
+         self.selectionFromIndex, self.caretIndex = 0, #self.value
+      end
+
       -- Deletion
       if love.keyboard.keysPressed["backspace"] then
          if self:hasSelectedText() then
