@@ -19,6 +19,7 @@ local INPUT_HEIGHT = TEXT_FONT_SIZE + TEXT_PADDING_TOP + TEXT_PADDING_DOWN
 local BLINKER_INTERVAL = 0.5 -- [s]
 
 local HOVER_CURSOR = love.mouse.getSystemCursor("ibeam")
+local HOVER_CURSOR_HALF_WIDTH = 2
 
 local function isKebabCase(value)
    return string.find(value, "^[a-z0-9][-a-z0-9]*$") ~= nil
@@ -90,9 +91,21 @@ end
 function TextInput:update()
    local mouseInfo = love.mouse.registerSolid(self)
 
-   if mouseInfo.clicksPerButton[1] or mouseInfo.clicksPerButton[2] then
+   local mouseClicks = mouseInfo.clicksPerButton[1] or mouseInfo.clicksPerButton[2]
+   if mouseClicks then
+      local clickX = mouseClicks[1].x + HOVER_CURSOR_HALF_WIDTH
       love.keyboard.focus(self)
-      self.caretIndex = #self.value
+      local from, to = 0, #self.value
+      local closestDistance, mid
+      while from <= to do
+         mid = math.floor((from + to) / 2)
+         local x = self.x + TEXT_PADDING_LEFT + TEXT_FONT:getWidth(string.sub(self.value, 1, mid))
+         local distance = math.abs(clickX - x)
+         if closestDistance == nil or distance < closestDistance then
+            self.caretIndex, closestDistance = mid, distance
+         end
+         if clickX < x then to = mid - 1 else from = mid + 1 end
+      end
    end
 
    if love.keyboard.focusedOnto == self then
@@ -173,7 +186,7 @@ function TextInput:draw()
    if love.keyboard.focusedOnto == self and
          math.floor((love.timer.getTime() - love.keyboard.focusedSince) / BLINKER_INTERVAL) % 2 == 0 then
       setColour(TEXT_COLOUR)
-      local x = self.x + TEXT_PADDING_LEFT + (TEXT_FONT:getWidth(string.sub(self.value, 1, self.caretIndex)))
+      local x = self.x + TEXT_PADDING_LEFT + TEXT_FONT:getWidth(string.sub(self.value, 1, self.caretIndex))
       local topY = self.y + TEXT_PADDING_TOP
       love.graphics.line(x, topY, x, topY + TEXT_FONT_SIZE)
    end
