@@ -99,6 +99,7 @@ function SpriteEditor:create(spriteDirectory)
 
             viewStack:popView(self.dialog)
             self.dialog = nil
+            this:openImage(pngFilePath)
          end)
          local cancelButton = Button:create("Cancel", nil, function()
             viewStack:popView(self.dialog)
