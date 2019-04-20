@@ -18,7 +18,7 @@ end
 local TILESHEET_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/tilesheets"
 local NEW_TILESHEET_ITEM = "(+) New tilesheet"
 
---- A list of maps in the current working directory
+--- A list of tilesheets in the current working directory
 function TilesheetList:create()
    local tilesheetFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("png")
    local tilesheetInfoFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("json")
