@@ -50,7 +50,8 @@ function SpriteEditor:create(spriteDirectory)
       animationListItems[#animationListItems + 1] = { value = imageFile.path, label = imageFile.name }
       fileNameTable[imageFile.name] = true
    end
-   local animationList = List:create(0, 0, SIDEBAR_WIDTH, animationListItems)
+   local animationList = List:create(animationListItems)
+   animationList:setSize(SIDEBAR_WIDTH)
 
    local navigator = Navigator:create()
    local this = {

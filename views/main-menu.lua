@@ -42,16 +42,62 @@ end
 
 --- The main menu
 function MainMenu:create()
-   local mapFiles = NativeFile:create(MAP_DIRECTORY):getFiles("map")
-   local mapItems = { { value = NEW_MAP_ITEM } }
+   local mapFiles = {}
+   local mapJsonFiles = {}
    local mapTable = {}
-   for i = 1, #mapFiles do
-      if not NativeFile:create(MAP_DIRECTORY):getChild(mapFiles[i].name .. ".json"):isFile() then
-         print("Map " .. mapFiles[i].name .. " has no JSON file. Pretending it doesn't exist...")
+
+   for _, mapFile in ipairs(NativeFile:create(MAP_DIRECTORY):getFiles("map")) do
+      local mapJsonFile = NativeFile:create(MAP_DIRECTORY):getChild(mapFile.name .. ".json")
+      mapTable[mapFile.name] = true
+
+      if not mapJsonFile:isFile() then
+         print("Map " .. mapFile.name .. " has no JSON file. Pretending it doesn't exist...")
       else
-         mapTable[mapFiles[i].name] = true
-         mapItems[#mapItems + 1] = { value = mapFiles[i].name }
+         mapFiles[#mapFiles + 1] = mapFile
+         mapJsonFiles[#mapJsonFiles + 1] = mapJsonFile
       end
+   end
+   for _, jsonFile in ipairs(NativeFile:create(MAP_DIRECTORY):getFiles("json")) do
+      mapTable[jsonFile.name] = true
+   end
+
+   local mapList
+   local mapItems = { { value = NEW_MAP_ITEM } }
+   for i = 1, #mapFiles do
+      local mapItem = { value = mapFiles[i].name }
+
+      local renameHandler = function()
+         local nameInput = TextInput:create(300, "Name", mapFiles[i].name, {
+            kebabCase = true,
+            validations = { function(value) return not mapTable[value] end }
+         })
+
+         local okButton = Button:create("OK", "solid", function()
+            if not (nameInput.isValid) then
+               return
+            end
+
+            mapFiles[i] = mapFiles[i]:rename(nameInput.value .. ".map")
+            mapJsonFiles[i] = mapJsonFiles[i]:rename(nameInput.value .. ".json")
+
+            mapTable[mapItem.value] = nil
+            mapList:removeItem(mapItem)
+            mapItem.value = nameInput.value
+            mapTable[mapItem.value] = true
+            mapList:addItemAndKeepSorted(mapItem)
+            viewStack:popView(self.dialog)
+            self.dialog = nil
+         end)
+         local cancelButton = Button:create("Cancel", nil, function()
+            viewStack:popView(self.dialog)
+            self.dialog = nil
+         end)
+
+         self.dialog = Dialog:create("Rename map '" .. mapItem.value .. "'", "What should the new name of the map be?",
+            { nameInput }, { cancelButton, okButton })
+      end
+      mapItem.buttons = { { label = "Rename", clickHandler = renameHandler, colour = { r = 0.6, g = 0.8, b = 1 } } }
+      mapItems[#mapItems + 1] = mapItem
    end
 
    local tilesheetFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("png")
@@ -98,9 +144,9 @@ function MainMenu:create()
       spriteItems[#spriteItems + 1] = item
    end
 
-   local mapList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), mapItems)
-   local tilesheetList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), tilesheetItems)
-   local spriteList = List:create(0, LIST_Y_POSITION, love.graphics.getWidth(), spriteItems, { iconSize = 32 })
+   mapList = List:create(mapItems)
+   local tilesheetList = List:create(tilesheetItems)
+   local spriteList = List:create(spriteItems, { iconSize = 32 })
 
    local this = {
       lists = { mapList, tilesheetList, spriteList },
@@ -254,8 +300,8 @@ function MainMenu:repositionIfNecessary()
    local listWidth = math.floor(love.graphics.getWidth() / 3)
    local currentX = 0
    for _, list in ipairs(self.lists) do
-      list:setX(currentX)
-      list:setWidth(listWidth)
+      list:setPosition(currentX, LIST_Y_POSITION)
+      list:setSize(listWidth)
       currentX = currentX + listWidth
    end
 end

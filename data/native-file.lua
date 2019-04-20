@@ -43,6 +43,20 @@ function NativeFile:getChild(childName)
    return NativeFile:create(self.path .. SEPARATOR .. childName)
 end
 
+--- Change the name of the file, but retain the rest of its path.
+-- On SUCCESS, returns a new NativeFile with the new name
+-- On FAILURE, throws an error
+-- @param newName {string}
+-- @returns {NativeFile} - The resulting file
+function NativeFile:rename(newName)
+   local newPath = string.gsub(self.path, self.filename .. "$", newName)
+   local _, errorMessage = os.rename(self.path, newPath)
+   if errorMessage ~= nil then
+      error("Encountered error '" .. errorMessage .. "' while renaming '" .. self.path .. "' to '" .. newPath .. "'")
+   end
+   return NativeFile:create(newPath)
+end
+
 --- Open the file at the spcified path with a mode (r/w/a/w+/a+).
 -- On SUCCESS, returns the file
 -- On FAILURE, throws an error

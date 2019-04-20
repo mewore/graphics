@@ -11,25 +11,29 @@ local HOVER_CURSOR = love.mouse.getSystemCursor("hand")
 
 local ITEM_VERTICAL_PADDING = 3
 local ITEM_HORIZONTAL_PADDING = 3
+local BUTTON_HORIZONTAL_PADDING = 3
 
 --- A simple List
 -- @param x {number} - The (leftmost) X position of the list
 -- @param y {number} - The (topmost) Y position of the list
 -- @param width {number} - The width of the list
--- @param items {{value: string, label?: string, icon?, iconQuad?, iconQuadWidth?: number, iconQuadHeight?: number}[]} - The items in the list
+-- @param items {{value: string, label?: string, icon?, iconQuad?, iconQuadWidth?: number, iconQuadHeight?: number,
+-- buttons?: {label: string, handler: function, colour?: {r: number, g: number, b: number}}[]}[]} - The items in the list
 -- @param options {{iconSize?: int} | nil} - Some additional options for the list items.
-function List:create(x, y, width, items, options)
+function List:create(items, options)
    options = options or {}
 
    local this = {
-      y = y,
+      x = 0,
+      y = 0,
+      height = 0,
+      width = 0,
       items = items,
       selection = nil,
       selectCallbacks = {},
       iconSize = options.iconSize or DEFAULT_ICON_SIZE,
       hasIcons = false,
-      height = 0,
-      lastY = y,
+      lastY = 0,
       isActive = false,
       selectedItem = nil,
    }
@@ -37,10 +41,20 @@ function List:create(x, y, width, items, options)
 
    for _, item in ipairs(items) do
       this:initializeItemIcon(item)
+      item.buttonElements = {}
+      print(item.buttons and #item.buttons)
+      for _, button in ipairs(item.buttons or {}) do
+         button.text = button.text or love.graphics.newText(ITEM_FONT, button.label)
+         item.buttonElements[#item.buttonElements + 1] = {
+            width = button.text:getWidth() + BUTTON_HORIZONTAL_PADDING * 2,
+            text = button.text,
+            colour = button.colour or { r = 1, g = 0.8, b = 0.5 },
+            clickHandler = button.clickHandler,
+         }
+      end
    end
 
-   this:setX(x)
-   this:setWidth(width)
+   this:repositionItems()
 
    return this
 end
@@ -66,15 +80,26 @@ end
 --- LOVE update handler
 function List:update()
    if self.lastY ~= self.y then
-      local dy = self.y - self.lastY
-      for _, item in ipairs(self.items) do
-         item.y, item.textY = item.y + dy, item.textY + dy
-      end
-      self.lastY = self.y
+      local newY = self.y
+      self.y = self.lastY
+      self:setPosition(self.x, newY)
    end
 
    self.isActive = false
    for index, item in ipairs(self.items) do
+      for _, buttonElement in ipairs(item.buttonElements) do
+         local mouseInfo = love.mouse.registerSolid(buttonElement)
+         buttonElement.isHovered = mouseInfo.isHovered
+         self.isActive = self.isActive or buttonElement.isHovered
+         buttonElement.isHeldDown = mouseInfo.drag ~= nil
+
+         if mouseInfo.isHovered and buttonElement.clickHandler then
+            love.mouse.cursor = HOVER_CURSOR
+            if mouseInfo.dragConfirmed then
+               buttonElement.clickHandler()
+            end
+         end
+      end
       local mouseInfo = love.mouse.registerSolid(item)
       item.isHovered = mouseInfo.isHovered
       self.isActive = self.isActive or item.isHovered
@@ -94,38 +119,82 @@ function List:onSelect(callback)
    self.selectCallbacks[#self.selectCallbacks + 1] = callback
 end
 
---- Change the X position of this list
--- @param newX {number} The new (leftmost) X position
-function List:setX(newX)
-   self.x = newX
+--- Change the position of this list
+-- @param x {number} The new X left position
+-- @param y {number} The new Y top position
+function List:setPosition(x, y)
+   local dx, dy = x - self.x, y - self.y
+   self.x, self.y, self.lastY = x, y, y
 
    for _, item in ipairs(self.items) do
-      item.x = newX
-      item.textX = item.x + ITEM_HORIZONTAL_PADDING + (self.hasIcons and (self.iconSize + ICON_MARGIN_RIGHT) or 0)
+      item.x, item.y = item.x + dx, item.y + dy
+      item.textX, item.textY = item.textX + dx, item.textY + dy
+
+      for _, buttonElement in ipairs(item.buttonElements) do
+         buttonElement.x, buttonElement.y = buttonElement.x + dx, buttonElement.y + dy
+         buttonElement.textX, buttonElement.textY = buttonElement.textX + dx, buttonElement.textY + dy
+      end
    end
 end
 
 --- Change the width of this list
--- @param newWidth {number} The new width
-function List:setWidth(newWidth)
-   self.width = newWidth
+-- @param width {number} The new width
+function List:setSize(width, _)
+   self.width = width
    self.height = 0
+   self:repositionItems()
+end
 
+--- Recalculate the position of all items
+function List:repositionItems()
    local currentY = self.y
    for _, item in ipairs(self.items) do
-      local textWidth = newWidth - ITEM_HORIZONTAL_PADDING * 2
-      if item.icon then
-         textWidth = textWidth - self.iconSize - ICON_MARGIN_RIGHT
+      item.x, item.y = self.x, currentY
+      item.textX = item.x + ITEM_HORIZONTAL_PADDING + (self.hasIcons and (self.iconSize + ICON_MARGIN_RIGHT) or 0)
+      item.width = self.width
+
+      local buttonElementX = item.x + self.width
+      for _, buttonElement in ipairs(item.buttonElements) do
+         buttonElementX = buttonElementX - buttonElement.width
+         buttonElement.x, buttonElement.y = buttonElementX, currentY
+         buttonElement.textX = buttonElementX + BUTTON_HORIZONTAL_PADDING
+      end
+
+      local textWidth = buttonElementX - ITEM_HORIZONTAL_PADDING - item.textX
+      for _, buttonElement in ipairs(item.buttonElements) do
+         buttonElement.y = currentY
       end
       local _, wrappedItemValue = ITEM_FONT:getWrap(item.label or item.value, textWidth)
-      item.y = currentY
       item.text = love.graphics.newText(ITEM_FONT, wrappedItemValue)
       item.height = math.max(item.text:getHeight(), item.icon and self.iconSize or 0) + ITEM_VERTICAL_PADDING * 2
-      item.width = newWidth
       item.textY = item.y + math.floor((item.height - item.text:getHeight()) / 2)
+      for _, buttonElement in ipairs(item.buttonElements) do
+         buttonElement.height = item.height
+      end
       currentY = currentY + item.height
       self.height = self.height + item.height
+
+      for _, buttonElement in ipairs(item.buttonElements) do
+         buttonElement.height = item.height
+         buttonElement.textY = buttonElement.y + math.floor((item.height - buttonElement.text:getHeight()) / 2)
+      end
    end
+end
+
+--- Remove an item, shifting all next items left
+-- @param itemToRemove {Item} The item that must be removed
+function List:removeItem(itemToRemove)
+   local hasRemovedItem = false
+   for i = 1, #self.items do
+      if hasRemovedItem then
+         self.items[i - 1] = self.items[i]
+      elseif self.items[i] == itemToRemove then
+         hasRemovedItem = true
+      end
+   end
+   self.items[#self.items] = nil
+
+   self:repositionItems()
 end
 
 --- Add an item at such a position that the list remains sorted
@@ -140,8 +209,7 @@ function List:addItemAndKeepSorted(newItem)
    self.items[#self.items + 1] = currentItem
 
    self:initializeItemIcon(newItem)
-   self:setX(self.x)
-   self:setWidth(self.width)
+   self:repositionItems()
 end
 
 --- Mark an item as select
@@ -165,6 +233,14 @@ function List:draw()
          love.graphics.rectangle("fill", item.x, item.y, item.width, item.height)
          love.graphics.reset()
       end
+      for _, buttonElement in ipairs(item.buttonElements) do
+         local buttonRectangleOpacity = buttonElement.isHeldDown and 0.2 or (buttonElement.isHovered and 0.1 or 0)
+         if buttonRectangleOpacity > 0 then
+            love.graphics.setColor(1, 1, 1, buttonRectangleOpacity)
+            love.graphics.rectangle("fill", buttonElement.x, buttonElement.y, buttonElement.width, buttonElement.height)
+            love.graphics.reset()
+         end
+      end
       if item.icon then
          local iconX = item.x + ITEM_HORIZONTAL_PADDING + item.iconOffsetX
          local iconY = item.y + ITEM_VERTICAL_PADDING + item.iconOffsetY
@@ -175,5 +251,11 @@ function List:draw()
          end
       end
       love.graphics.draw(item.text, item.textX, item.textY)
+      for _, buttonElement in ipairs(item.buttonElements) do
+         local colour = buttonElement.colour;
+         love.graphics.setColor(colour.r, colour.g, colour.b, 1)
+         love.graphics.draw(buttonElement.text, buttonElement.textX, buttonElement.textY)
+      end
+      love.graphics.reset()
    end
 end
