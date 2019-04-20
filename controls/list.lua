@@ -181,6 +181,14 @@ function List:repositionItems()
    end
 end
 
+function List:getX() return self.x end
+
+function List:getY() return self.y end
+
+function List:getWidth() return self.width end
+
+function List:getHeight() return self.height end
+
 --- Remove an item, shifting all next items left
 -- @param itemToRemove {Item} The item that must be removed
 function List:removeItem(itemToRemove)

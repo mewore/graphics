@@ -1,7 +1,6 @@
 require "controls/list"
-require "data/map-encoder"
 require "data/native-file"
-require "views/map-editor"
+require "main-menu-lists/map-list"
 require "views/tile-editor"
 require "views/sprite-editor"
 
@@ -25,11 +24,9 @@ local LIST_Y_POSITION = SUBTITLE_Y_POSITION + MAPS_SUBTITLE_TEXT:getHeight()
 
 local BACKGROUND_VALUE = 0.2
 
-local MAP_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/maps"
 local TILESHEET_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/tilesheets"
 local SPRITE_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/sprites"
 
-local NEW_MAP_ITEM = "(+) New map"
 local NEW_TILESHEET_ITEM = "(+) New tilesheet"
 local NEW_SPRITE_ITEM = "(+) New sprite"
 
@@ -42,64 +39,6 @@ end
 
 --- The main menu
 function MainMenu:create()
-   local mapFiles = {}
-   local mapJsonFiles = {}
-   local mapTable = {}
-
-   for _, mapFile in ipairs(NativeFile:create(MAP_DIRECTORY):getFiles("map")) do
-      local mapJsonFile = NativeFile:create(MAP_DIRECTORY):getChild(mapFile.name .. ".json")
-      mapTable[mapFile.name] = true
-
-      if not mapJsonFile:isFile() then
-         print("Map " .. mapFile.name .. " has no JSON file. Pretending it doesn't exist...")
-      else
-         mapFiles[#mapFiles + 1] = mapFile
-         mapJsonFiles[#mapJsonFiles + 1] = mapJsonFile
-      end
-   end
-   for _, jsonFile in ipairs(NativeFile:create(MAP_DIRECTORY):getFiles("json")) do
-      mapTable[jsonFile.name] = true
-   end
-
-   local mapList
-   local mapItems = { { value = NEW_MAP_ITEM } }
-   for i = 1, #mapFiles do
-      local mapItem = { value = mapFiles[i].name }
-
-      local renameHandler = function()
-         local nameInput = TextInput:create(300, "Name", mapFiles[i].name, {
-            kebabCase = true,
-            validations = { function(value) return not mapTable[value] end }
-         })
-
-         local okButton = Button:create("OK", "solid", function()
-            if not (nameInput.isValid) then
-               return
-            end
-
-            mapFiles[i] = mapFiles[i]:rename(nameInput.value .. ".map")
-            mapJsonFiles[i] = mapJsonFiles[i]:rename(nameInput.value .. ".json")
-
-            mapTable[mapItem.value] = nil
-            mapList:removeItem(mapItem)
-            mapItem.value = nameInput.value
-            mapTable[mapItem.value] = true
-            mapList:addItemAndKeepSorted(mapItem)
-            viewStack:popView(self.dialog)
-            self.dialog = nil
-         end)
-         local cancelButton = Button:create("Cancel", nil, function()
-            viewStack:popView(self.dialog)
-            self.dialog = nil
-         end)
-
-         self.dialog = Dialog:create("Rename map '" .. mapItem.value .. "'", "What should the new name of the map be?",
-            { nameInput }, { cancelButton, okButton })
-      end
-      mapItem.buttons = { { label = "Rename", clickHandler = renameHandler, colour = { r = 0.6, g = 0.8, b = 1 } } }
-      mapItems[#mapItems + 1] = mapItem
-   end
-
    local tilesheetFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("png")
    local tilesheetInfoFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("json")
    local tilesheetInfoByName = {}
@@ -144,57 +83,16 @@ function MainMenu:create()
       spriteItems[#spriteItems + 1] = item
    end
 
-   mapList = List:create(mapItems)
    local tilesheetList = List:create(tilesheetItems)
    local spriteList = List:create(spriteItems, { iconSize = 32 })
 
    local this = {
-      lists = { mapList, tilesheetList, spriteList },
+      lists = { MapList:create(), tilesheetList, spriteList },
       subtitles = { MAPS_SUBTITLE_TEXT, TILESHEET_SUBTITLE_TEXT, SPRITES_SUBTITLE_TEXT },
    }
    setmetatable(this, self)
 
    this:repositionIfNecessary()
-
-   mapList:onSelect(function(value)
-      if value == NEW_MAP_ITEM then
-         local nameInput = TextInput:create(300, "Name", "", {
-            kebabCase = true,
-            validations = { function(value) return not mapTable[value] end }
-         })
-         local widthInput = TextInput:create(50, "Width", "256", { positive = true, integer = true })
-         local heightInput = TextInput:create(50, "Height", "32", { positive = true, integer = true })
-
-         local okButton = Button:create("OK", "solid", function()
-            if not (nameInput.isValid and widthInput.isValid and heightInput.isValid) then
-               return
-            end
-
-            local mapPath = MAP_DIRECTORY .. "/" .. nameInput.value
-            local width, height = tonumber(widthInput.value), tonumber(heightInput.value)
-
-            local mapTiles = {}
-            local mapTileCount = width * height
-            for i = 1, mapTileCount do
-               mapTiles[i] = 0
-            end
-            MapEncoder:create():saveToFile(mapPath, { points = {}, width = width, height = height, tiles = mapTiles })
-            mapList:addItemAndKeepSorted({ value = nameInput.value })
-            viewStack:popView(self.dialog)
-            self.dialog = nil
-            openEditor(MapEditor:create(MAP_DIRECTORY .. "/" .. nameInput.value, TILESHEET_DIRECTORY))
-         end)
-         local cancelButton = Button:create("Cancel", nil, function()
-            viewStack:popView(self.dialog)
-            self.dialog = nil
-         end)
-
-         self.dialog = Dialog:create("Create a new map", "What should the name of the map be?",
-            { nameInput, widthInput, heightInput }, { cancelButton, okButton })
-      else
-         openEditor(MapEditor:create(MAP_DIRECTORY .. "/" .. value, TILESHEET_DIRECTORY))
-      end
-   end)
 
    tilesheetList:onSelect(function(value)
       if value == NEW_TILESHEET_ITEM then
@@ -317,10 +215,10 @@ function MainMenu:draw()
    for index, list in ipairs(self.lists) do
       list:draw()
       love.graphics.setColor(0.2, 0.7, 1.0)
-      love.graphics.draw(self.subtitles[index], math.floor(list.x + (list.width - self.subtitles[index]:getWidth()) / 2), SUBTITLE_Y_POSITION)
+      love.graphics.draw(self.subtitles[index], math.floor(list:getX() + (list:getWidth() - self.subtitles[index]:getWidth()) / 2), SUBTITLE_Y_POSITION)
       love.graphics.reset()
       if index > 1 then
-         love.graphics.line(list.x, SUBTITLE_Y_POSITION, list.x, love.graphics.getHeight())
+         love.graphics.line(list:getX(), SUBTITLE_Y_POSITION, list:getX(), love.graphics.getHeight())
       end
    end
 end
