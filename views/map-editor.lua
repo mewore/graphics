@@ -135,7 +135,7 @@ function MapEditor:create(mapPath, spritesheetDirectoryPath)
          if tile ~= TILE_EMPTY then
             this.activeTool = this.previousTool
             this.previousTool = TOOL_IMAGE_EDITOR
-            this.imageEditor = ImageEditor:create(allTilesheetFiles[tile].path)
+            this.imageEditor = TileEditor:create(allTilesheetFiles[tile].path)
             viewStack:pushView(this.imageEditor)
             this.imageEditor.onClose = function()
                viewStack:popView(this.imageEditor)

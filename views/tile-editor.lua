@@ -4,8 +4,8 @@ require "tools/tile-controls"
 require "data/native-file"
 require "navigator"
 
-ImageEditor = {}
-ImageEditor.__index = ImageEditor
+TileEditor = {}
+TileEditor.__index = TileEditor
 
 local SAVE_BUTTON = "s"
 local LEFT_MOUSE_BUTTON = 1
@@ -25,7 +25,7 @@ local TOOL_PIPETTE = 2
 
 --- Displays a map and allows the user to edit it
 -- @param filename {string} - The path to the file that should be edited
-function ImageEditor:create(filename)
+function TileEditor:create(filename)
    local file = NativeFile:create(filename)
    local fileData = love.filesystem.newFileData(file:read(), filename)
    local imageData = love.image.newImageData(fileData)
@@ -75,7 +75,7 @@ end
 
 --- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
-function ImageEditor:update(dt)
+function TileEditor:update(dt)
    if love.keyboard.escapeIsPressed then
       self.onClose()
    end
@@ -144,7 +144,7 @@ local function drawCheckerboard(width, height)
 end
 
 --- LOVE draw handler
-function ImageEditor:draw()
+function TileEditor:draw()
    -- Gray border
    love.graphics.clear(BORDER_VALUE, BORDER_VALUE, BORDER_VALUE)
 

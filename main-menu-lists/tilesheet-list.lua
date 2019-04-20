@@ -82,14 +82,14 @@ function TilesheetList:create()
             list:addItemAndKeepSorted({ label = nameInput.value, value = pngFilePath })
 
             viewStack:popView(dialog)
-            openEditor(ImageEditor:create(pngFilePath))
+            openEditor(TileEditor:create(pngFilePath))
          end)
          local cancelButton = Button:create("Cancel", nil, function() viewStack:popView(dialog) end)
 
          dialog = Dialog:create("Create a new tilesheet", nil,
             { nameInput, widthInput, heightInput }, { cancelButton, okButton })
       else
-         openEditor(ImageEditor:create(value))
+         openEditor(TileEditor:create(value))
       end
    end)
 
