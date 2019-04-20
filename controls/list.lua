@@ -17,7 +17,8 @@ local BUTTON_HORIZONTAL_PADDING = 3
 -- @param x {number} - The (leftmost) X position of the list
 -- @param y {number} - The (topmost) Y position of the list
 -- @param width {number} - The width of the list
--- @param items {{value: string, label?: string, icon?, iconQuad?, iconQuadWidth?: number, iconQuadHeight?: number,
+-- @param items {{value: string label?: string,
+-- disabled?: boolean, icon?, iconQuad?, iconQuadWidth?: number, iconQuadHeight?: number,
 -- buttons?: {label: string, handler: function, colour?: {r: number, g: number, b: number}}[]}[]} - The items in the list
 -- @param options {{iconSize?: int} | nil} - Some additional options for the list items.
 function List:create(items, options)
@@ -44,7 +45,6 @@ function List:create(items, options)
       this:initializeItemIcon(item)
       this:initializeItemButtons(item)
       this.valueSet[item.value] = true
-      print("Setting '" .. item.value .. "' to true")
    end
 
    this:repositionItems()
@@ -119,15 +119,17 @@ function List:update()
             end
          end
       end
-      local mouseInfo = love.mouse.registerSolid(item)
-      item.isHovered = mouseInfo.isHovered
-      self.isActive = self.isActive or item.isHovered
+      if not item.disabled then
+         local mouseInfo = love.mouse.registerSolid(item)
+         item.isHovered = mouseInfo.isHovered
+         self.isActive = self.isActive or item.isHovered
 
-      if self.selectedItem ~= index and mouseInfo.isHovered and #self.selectCallbacks > 0 then
-         love.mouse.cursor = HOVER_CURSOR
-         if mouseInfo.dragConfirmed then
-            for _, callback in ipairs(self.selectCallbacks) do
-               callback(item.value)
+         if self.selectedItem ~= index and mouseInfo.isHovered and #self.selectCallbacks > 0 then
+            love.mouse.cursor = HOVER_CURSOR
+            if mouseInfo.dragConfirmed then
+               for _, callback in ipairs(self.selectCallbacks) do
+                  callback(item.value)
+               end
             end
          end
       end
@@ -280,7 +282,9 @@ function List:draw()
             love.graphics.draw(item.icon, iconX, iconY, 0, item.iconScale, item.iconScale)
          end
       end
+      if item.disabled then love.graphics.setColor(0.8, 0.4, 0.4, 1) end
       love.graphics.draw(item.text, item.textX, item.textY)
+      love.graphics.reset()
       for _, buttonElement in ipairs(item.buttonElements) do
          local colour = buttonElement.colour;
          love.graphics.setColor(colour.r, colour.g, colour.b, 1)
