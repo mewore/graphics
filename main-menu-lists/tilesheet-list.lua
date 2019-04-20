@@ -27,17 +27,14 @@ function TilesheetList:create()
       tilesheetInfoByName[tilesheetInfoFile.name] = tilesheetInfoFile:readAsJson()
    end
 
-   local tilesheetTable = {}
    local tilesheetItems = { { value = NEW_TILESHEET_ITEM } }
    for _, file in ipairs(tilesheetFiles) do
       local tilesheetInfo = tilesheetInfoByName[file.name]
       if not tilesheetInfo then
          error("There is no " .. file.name .. ".json file corresponding to " .. file.filename)
       end
-      tilesheetTable[file.name] = true
       tilesheetItems[#tilesheetItems + 1] = {
-         label = file.name,
-         value = file.path,
+         value = file.name,
          icon = file:readAsImage(),
          iconQuadWidth = tilesheetInfo.width,
          iconQuadHeight = tilesheetInfo.height,
@@ -54,7 +51,7 @@ function TilesheetList:create()
       if value == NEW_TILESHEET_ITEM then
          local nameInput = TextInput:create(300, "Name", "", {
             kebabCase = true,
-            validations = { function(value) return not tilesheetTable[value] end }
+            validations = { function(value) return not list:containsValue(value) end }
          })
          local widthInput = TextInput:create(50, "Tile width", "32", { positive = true, integer = true })
          local heightInput = TextInput:create(50, "Tile height", "32", { positive = true, integer = true })
@@ -79,7 +76,7 @@ function TilesheetList:create()
             local jsonFilePath = tilesheetPath .. ".json"
             NativeFile:create(pngFilePath):write(pngFileData:encode("png"):getString())
             NativeFile:create(jsonFilePath):writeAsJson({ width = width, height = height })
-            list:addItemAndKeepSorted({ label = nameInput.value, value = pngFilePath })
+            list:addItemAndKeepSorted({ value = nameInput.value })
 
             viewStack:popView(dialog)
             openEditor(TileEditor:create(pngFilePath))
@@ -89,7 +86,7 @@ function TilesheetList:create()
          dialog = Dialog:create("Create a new tilesheet", nil,
             { nameInput, widthInput, heightInput }, { cancelButton, okButton })
       else
-         openEditor(TileEditor:create(value))
+         openEditor(TileEditor:create(TILESHEET_DIRECTORY .. "/" .. nameInput.value .. ".png"))
       end
    end)
 

@@ -36,12 +36,15 @@ function List:create(items, options)
       lastY = 0,
       isActive = false,
       selectedItem = nil,
+      valueSet = {},
    }
    setmetatable(this, self)
 
    for _, item in ipairs(items) do
       this:initializeItemIcon(item)
       this:initializeItemButtons(item)
+      this.valueSet[item.value] = true
+      print("Setting '" .. item.value .. "' to true")
    end
 
    this:repositionItems()
@@ -49,6 +52,17 @@ function List:create(items, options)
    return this
 end
 
+--- Checks whether a value is contained in the list. This would not work if there are elements with the same value and
+-- one of them is removed.
+-- @param value {string} The value to look for.
+-- @returns {boolean} Whether the value is contained in the list.
+function List:containsValue(value)
+   print("Checking '" .. value .. "'")
+   return self.valueSet[value] == true
+end
+
+--- If the item has icon settings, initialize an icon for it.
+-- @param item {Item} The item to initialize the icon of.
 function List:initializeItemIcon(item)
    if item.icon then
       self.hasIcons = true
@@ -67,6 +81,8 @@ function List:initializeItemIcon(item)
    end
 end
 
+--- If the item has button settings, initialize buttons for it.
+-- @param item {Item} The item to initialize the buttons of.
 function List:initializeItemButtons(item)
    item.buttonElements = {}
    for _, button in ipairs(item.buttons or {}) do
@@ -204,6 +220,7 @@ function List:removeItem(itemToRemove)
       end
    end
    self.items[#self.items] = nil
+   self.valueSet[itemToRemove.value] = nil
 
    self:repositionItems()
 end
@@ -218,6 +235,7 @@ function List:addItemAndKeepSorted(newItem)
       end
    end
    self.items[#self.items + 1] = currentItem
+   self.valueSet[newItem.value] = true
 
    self:initializeItemIcon(newItem)
    self:initializeItemButtons(newItem)

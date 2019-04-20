@@ -18,10 +18,9 @@ end
 --- A list of sprites in the current working directory
 function SpriteList:create()
    local spriteDirectories = NativeFile:create(SPRITE_DIRECTORY):getDirectories()
-   local spriteTable = {}
    local spriteItems = { { value = NEW_SPRITE_ITEM } }
    for _, spriteDirectory in ipairs(spriteDirectories) do
-      local item = { label = spriteDirectory.name, value = spriteDirectory.path }
+      local item = { value = spriteDirectory.name }
       local spriteIconFile = spriteDirectory:getChild("icon.png")
       if not spriteIconFile:isFile() then
          spriteIconFile = spriteDirectory:getChild("idle.png")
@@ -33,7 +32,6 @@ function SpriteList:create()
          item.iconQuadHeight = icon:getHeight()
       end
 
-      spriteTable[spriteDirectory.name] = true
       spriteItems[#spriteItems + 1] = item
    end
 
@@ -48,7 +46,7 @@ function SpriteList:create()
          local dialog
          local nameInput = TextInput:create(300, "Name", "", {
             kebabCase = true,
-            validations = { function(value) return not spriteTable[value] end }
+            validations = { function(value) return not list:containsValue(value) end }
          })
 
          local okButton = Button:create("OK", "solid", function()
@@ -58,7 +56,6 @@ function SpriteList:create()
             directory:createDirectory()
 
             list:addItemAndKeepSorted({ label = directory.name, value = directory.path })
-            spriteTable[nameInput.value] = true
 
             viewStack:popView(dialog)
             openEditor(SpriteEditor:create(directory.path))
@@ -67,7 +64,7 @@ function SpriteList:create()
 
          dialog = Dialog:create("Create a new sprite", nil, { nameInput }, { cancelButton, okButton })
       else
-         openEditor(SpriteEditor:create(value))
+         openEditor(SpriteEditor:create(SPRITE_DIRECTORY .. "/" .. value))
       end
    end)
 
