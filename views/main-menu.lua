@@ -1,6 +1,7 @@
 require "controls/list"
 require "data/native-file"
 require "main-menu-lists/map-list"
+require "main-menu-lists/tilesheet-list"
 require "views/tile-editor"
 require "views/sprite-editor"
 
@@ -24,10 +25,8 @@ local LIST_Y_POSITION = SUBTITLE_Y_POSITION + MAPS_SUBTITLE_TEXT:getHeight()
 
 local BACKGROUND_VALUE = 0.2
 
-local TILESHEET_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/tilesheets"
 local SPRITE_DIRECTORY = love.filesystem.getWorkingDirectory() .. "/sprites"
 
-local NEW_TILESHEET_ITEM = "(+) New tilesheet"
 local NEW_SPRITE_ITEM = "(+) New sprite"
 
 --- Open an editor at the top of the view stack and remove it when it is closed
@@ -39,30 +38,6 @@ end
 
 --- The main menu
 function MainMenu:create()
-   local tilesheetFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("png")
-   local tilesheetInfoFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("json")
-   local tilesheetInfoByName = {}
-   for _, tilesheetInfoFile in ipairs(tilesheetInfoFiles) do
-      tilesheetInfoByName[tilesheetInfoFile.name] = tilesheetInfoFile:readAsJson()
-   end
-
-   local tilesheetTable = {}
-   local tilesheetItems = { { value = NEW_TILESHEET_ITEM } }
-   for _, file in ipairs(tilesheetFiles) do
-      local tilesheetInfo = tilesheetInfoByName[file.name]
-      if not tilesheetInfo then
-         error("There is no " .. file.name .. ".json file corresponding to " .. file.filename)
-      end
-      tilesheetTable[file.name] = true
-      tilesheetItems[#tilesheetItems + 1] = {
-         label = file.name,
-         value = file.path,
-         icon = file:readAsImage(),
-         iconQuadWidth = tilesheetInfo.width,
-         iconQuadHeight = tilesheetInfo.height,
-      }
-   end
-
    local spriteDirectories = NativeFile:create(SPRITE_DIRECTORY):getDirectories()
    local spriteTable = {}
    local spriteItems = { { value = NEW_SPRITE_ITEM } }
@@ -83,62 +58,15 @@ function MainMenu:create()
       spriteItems[#spriteItems + 1] = item
    end
 
-   local tilesheetList = List:create(tilesheetItems)
    local spriteList = List:create(spriteItems, { iconSize = 32 })
 
    local this = {
-      lists = { MapList:create(), tilesheetList, spriteList },
+      lists = { MapList:create(), TilesheetList:create(), spriteList },
       subtitles = { MAPS_SUBTITLE_TEXT, TILESHEET_SUBTITLE_TEXT, SPRITES_SUBTITLE_TEXT },
    }
    setmetatable(this, self)
 
    this:repositionIfNecessary()
-
-   tilesheetList:onSelect(function(value)
-      if value == NEW_TILESHEET_ITEM then
-         local nameInput = TextInput:create(300, "Name", "", {
-            kebabCase = true,
-            validations = { function(value) return not tilesheetTable[value] end }
-         })
-         local widthInput = TextInput:create(50, "Tile width", "32", { positive = true, integer = true })
-         local heightInput = TextInput:create(50, "Tile height", "32", { positive = true, integer = true })
-
-         local okButton = Button:create("OK", "solid", function()
-            if not (nameInput.isValid and widthInput.isValid and heightInput.isValid) then
-               return
-            end
-
-            local tilesheetPath = TILESHEET_DIRECTORY .. "/" .. nameInput.value
-            local width, height = tonumber(widthInput.value), tonumber(heightInput.value)
-
-            local pngFilePath = tilesheetPath .. ".png"
-            local pngFileData = love.image.newImageData(width, height)
-            for y = 0, height - 1 do
-               for x = 0, width - 1 do
-                  pngFileData:setPixel(x, y, 0, 0, 0, 0)
-               end
-            end
-
-            local jsonFilePath = tilesheetPath .. ".json"
-            NativeFile:create(pngFilePath):write(pngFileData:encode("png"):getString())
-            NativeFile:create(jsonFilePath):writeAsJson({ width = width, height = height })
-            tilesheetList:addItemAndKeepSorted({ label = nameInput.value, value = pngFilePath })
-
-            viewStack:popView(self.dialog)
-            self.dialog = nil
-            openEditor(ImageEditor:create(pngFilePath))
-         end)
-         local cancelButton = Button:create("Cancel", nil, function()
-            viewStack:popView(self.dialog)
-            self.dialog = nil
-         end)
-
-         self.dialog = Dialog:create("Create a new tilesheet", nil,
-            { nameInput, widthInput, heightInput }, { cancelButton, okButton })
-      else
-         openEditor(ImageEditor:create(value))
-      end
-   end)
 
    spriteList:onSelect(function(value)
       if value == NEW_SPRITE_ITEM then

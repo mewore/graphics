@@ -41,17 +41,7 @@ function List:create(items, options)
 
    for _, item in ipairs(items) do
       this:initializeItemIcon(item)
-      item.buttonElements = {}
-      print(item.buttons and #item.buttons)
-      for _, button in ipairs(item.buttons or {}) do
-         button.text = button.text or love.graphics.newText(ITEM_FONT, button.label)
-         item.buttonElements[#item.buttonElements + 1] = {
-            width = button.text:getWidth() + BUTTON_HORIZONTAL_PADDING * 2,
-            text = button.text,
-            colour = button.colour or { r = 1, g = 0.8, b = 0.5 },
-            clickHandler = button.clickHandler,
-         }
-      end
+      this:initializeItemButtons(item)
    end
 
    this:repositionItems()
@@ -74,6 +64,19 @@ function List:initializeItemIcon(item)
          item.iconOffsetX = math.floor((self.iconSize - item.icon:getWidth() * item.iconScale) / 2)
          item.iconOffsetY = math.floor((self.iconSize - item.icon:getHeight() * item.iconScale) / 2)
       end
+   end
+end
+
+function List:initializeItemButtons(item)
+   item.buttonElements = {}
+   for _, button in ipairs(item.buttons or {}) do
+      button.text = button.text or love.graphics.newText(ITEM_FONT, button.label)
+      item.buttonElements[#item.buttonElements + 1] = {
+         width = button.text:getWidth() + BUTTON_HORIZONTAL_PADDING * 2,
+         text = button.text,
+         colour = button.colour or { r = 1, g = 0.8, b = 0.5 },
+         clickHandler = button.clickHandler,
+      }
    end
 end
 
@@ -217,6 +220,7 @@ function List:addItemAndKeepSorted(newItem)
    self.items[#self.items + 1] = currentItem
 
    self:initializeItemIcon(newItem)
+   self:initializeItemButtons(newItem)
    self:repositionItems()
 end
 

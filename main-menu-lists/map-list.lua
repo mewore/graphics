@@ -128,6 +128,8 @@ function MapList:setPosition(x, y) self.list:setPosition(x, y) end
 
 function MapList:setSize(width, height) self.list:setSize(width, height) end
 
+function MapList:setSize(width, height) self.list:setSize(width, height) end
+
 function MapList:getX() return self.list:getX() end
 
 function MapList:getY() return self.list:getY() end
@@ -136,17 +138,9 @@ function MapList:getWidth() return self.list:getWidth() end
 
 function MapList:getHeight() return self.list:getHeight() end
 
-function MapList:setSize(width, height)
-   self.list:setSize(width, height)
-end
-
 --- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
-function MapList:update(dt)
-   self.list:update(dt)
-end
+function MapList:update(dt) self.list:update(dt) end
 
 --- LOVE draw handler
-function MapList:draw()
-   self.list:draw()
-end
+function MapList:draw() self.list:draw() end
