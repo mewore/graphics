@@ -38,6 +38,7 @@ function List:create(items, options)
       isActive = false,
       selectedItem = nil,
       valueSet = {},
+      options = options,
    }
    setmetatable(this, self)
 
@@ -85,7 +86,11 @@ end
 -- @param item {Item} The item to initialize the buttons of.
 function List:initializeItemButtons(item)
    item.buttonElements = {}
-   for _, button in ipairs(item.buttons or {}) do
+   local buttons = item.buttons or {}
+   for _, button in ipairs(self.options.buttons or {}) do
+      if not button.appliesToItem or button.appliesToItem(item) then buttons[#buttons + 1] = button end
+   end
+   for _, button in ipairs(buttons) do
       button.text = button.text or love.graphics.newText(ITEM_FONT, button.label)
       item.buttonElements[#item.buttonElements + 1] = {
          width = button.text:getWidth() + BUTTON_HORIZONTAL_PADDING * 2,
@@ -115,7 +120,7 @@ function List:update()
          if mouseInfo.isHovered and buttonElement.clickHandler then
             love.mouse.cursor = HOVER_CURSOR
             if mouseInfo.dragConfirmed then
-               buttonElement.clickHandler()
+               buttonElement.clickHandler(item)
             end
          end
       end

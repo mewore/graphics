@@ -47,7 +47,41 @@ function TilesheetList:create()
       end
    end
 
-   local list = List:create(tilesheetItems)
+   local list
+   local renameButton = {
+      label = "Rename",
+      colour = { r = 0.6, g = 0.8, b = 1 },
+      appliesToItem = function(item) return item.value ~= NEW_TILESHEET_ITEM end,
+      clickHandler = function(item)
+         local dialog
+         local nameInput = TextInput:create(300, "Name", item.value, {
+            kebabCase = true,
+            validations = { function(value) return not list:containsValue(value) end }
+         })
+
+         local okButton = Button:create("OK", "solid", function()
+            if not (nameInput.isValid) then return end
+            local oldName, newName = item.value, nameInput.value
+
+            if pngFileTable[oldName] then
+               pngFileTable[oldName], pngFileTable[newName] = nil, pngFileTable[oldName]:rename(newName .. ".png")
+            end
+            if jsonFileTable[oldName] then
+               jsonFileTable[oldName], jsonFileTable[newName] = nil, jsonFileTable[oldName]:rename(newName .. ".json")
+            end
+
+            list:removeItem(item)
+            item.value = newName
+            list:addItemAndKeepSorted(item)
+            viewStack:popView(dialog)
+         end)
+         local cancelButton = Button:create("Cancel", nil, function() viewStack:popView(dialog) end)
+
+         dialog = Dialog:create("Rename tilesheet '" .. item.value .. "'", "What should the new name be?",
+            { nameInput }, { cancelButton, okButton })
+      end,
+   }
+   list = List:create(tilesheetItems, { buttons = { renameButton } })
    local this = {
       list = list,
    }

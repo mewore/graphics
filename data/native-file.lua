@@ -49,7 +49,7 @@ end
 -- @param newName {string}
 -- @returns {NativeFile} - The resulting file
 function NativeFile:rename(newName)
-   local newPath = string.gsub(self.path, self.filename .. "$", newName)
+   local newPath = self.path:sub(1, #self.path - #self.filename) .. newName
    local _, errorMessage = os.rename(self.path, newPath)
    if errorMessage ~= nil then
       error("Encountered error '" .. errorMessage .. "' while renaming '" .. self.path .. "' to '" .. newPath .. "'")
