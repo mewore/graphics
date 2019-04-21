@@ -11,7 +11,9 @@ ColourPickerDialog.__index = ColourPickerDialog
 function ColourPickerDialog:open(initialValue, okHandler)
    local colourPickerSquare = ColourPickerSquare:create({ initialValue = initialValue })
    local colourPickerSlider = ColourPickerHueSlider:create(colourPickerSquare)
-   colourPickerSlider.x = colourPickerSquare.x + colourPickerSquare.width + 10
+   local squareX, _ = colourPickerSquare:getPosition()
+   local squareWidth, _ = colourPickerSquare:getSize()
+   colourPickerSlider:setPosition(squareX + squareWidth + 10, 0)
 
    local dialog
    local okButton = Button:create("OK", "solid", function()

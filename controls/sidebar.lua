@@ -16,10 +16,11 @@ function Sidebar:create(controls, width)
 
    local y = PADDING_TOP
    for i = 1, #controls do
-      controls[i].y = y
-      controls[i].x = math.floor((width - controls[i].width) / 2)
+      controls[i]:setPosition(0, y)
+      local _, controlHeight = controls[i]:getSize()
+      controls[i]:setSize(width, controlHeight)
       if i < #controls then
-         y = y + controls[i].height + math.max(controls[i].marginBottom or 0, controls[i + 1].marginTop or 0, MIN_MARGIN)
+         y = y + controlHeight + math.max(controls[i].marginBottom or 0, controls[i + 1].marginTop or 0, MIN_MARGIN)
       end
    end
 

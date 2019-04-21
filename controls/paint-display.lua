@@ -32,14 +32,41 @@ function PaintDisplay:create(initialFront, initialBack, drawFunction, paintPicke
    }
    setmetatable(this, self)
 
+   this:repositionSquares()
+
    return this
+end
+
+--- Change the position of this element
+-- @param x {number} The new X left position
+-- @param y {number} The new Y top position
+function PaintDisplay:setPosition(x, y)
+   self.x, self.y = x, y; self:repositionSquares()
+end
+
+--- Get both the X and the Y position of this element
+-- @returns {int}, {int}
+function PaintDisplay:getPosition() return self.x, self.y end
+
+--- Change the size of this element
+-- @param width {number} The new width
+-- @param height {number} The new height
+function PaintDisplay:setSize(width, height) self.width, self.height = width, height; self:repositionSquares() end
+
+--- Get the size of this element
+-- @returns {int}, {int}
+function PaintDisplay:getSize() return self.width, self.height end
+
+function PaintDisplay:repositionSquares()
+   local totalSize = math.floor(SQUARE_SIZE * (3 / 2))
+   self.front:setPosition(self.x + math.floor((self.width - totalSize) / 2),
+      self.y + math.floor((self.height - totalSize) / 2))
+   self.back:setPosition(self.front.x + SQUARE_SIZE / 2, self.front.y + SQUARE_SIZE / 2)
 end
 
 --- LOVE update handler
 function PaintDisplay:update()
-   self.front.x, self.front.y = self.x, self.y
    self.front:update()
-   self.back.x, self.back.y = self.x + SQUARE_SIZE / 2, self.y + SQUARE_SIZE / 2
    self.back:update()
 
    self.isActive = self.front.isActive or self.back.isActive

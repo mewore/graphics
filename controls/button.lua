@@ -63,6 +63,24 @@ function Button:create(label, type, onClick)
    return this
 end
 
+--- Change the position of this element
+-- @param x {number} The new X left position
+-- @param y {number} The new Y top position
+function Button:setPosition(x, y) self.x, self.y = x, y end
+
+--- Get both the X and the Y position of this element
+-- @returns {int}, {int}
+function Button:getPosition() return self.x, self.y end
+
+--- Change the size of this element
+-- @param width {number} The new width
+-- @param height {number} The new height
+function Button:setSize(width, height) self.width, self.height = width, height end
+
+--- Get the size of this element
+-- @returns {int}, {int}
+function Button:getSize() return self.width, self.height end
+
 --- LOVE update handler
 function Button:update()
    local mouseInfo = love.mouse.registerSolid(self)

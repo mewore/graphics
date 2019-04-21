@@ -158,6 +158,15 @@ function List:setPosition(x, y)
    end
 end
 
+--- Change the position of this element
+-- @param x {number} The new X left position
+-- @param y {number} The new Y top position
+function List:setPosition(x, y) self.x, self.y = x, y end
+
+--- Get both the X and the Y position of this element
+-- @returns {int}, {int}
+function List:getPosition() return self.x, self.y end
+
 --- Change the width of this list
 -- @param width {number} The new width
 function List:setSize(width, _)
@@ -165,6 +174,10 @@ function List:setSize(width, _)
    self.height = 0
    self:repositionItems()
 end
+
+--- Get the size of this element
+-- @returns {int}, {int}
+function List:getSize() return self.width, self.height end
 
 --- Recalculate the position of all items
 function List:repositionItems()

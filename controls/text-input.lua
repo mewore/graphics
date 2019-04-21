@@ -88,6 +88,24 @@ function TextInput:create(width, placeholder, initialValue, options)
    return this
 end
 
+--- Change the position of this element
+-- @param x {number} The new X left position
+-- @param y {number} The new Y top position
+function TextInput:setPosition(x, y) self.x, self.y = x, y end
+
+--- Get both the X and the Y position of this element
+-- @returns {int}, {int}
+function TextInput:getPosition() return self.x, self.y end
+
+--- Change the size of this element
+-- @param width {number} The new width
+-- @param height {number} The new height
+function TextInput:setSize(width, height) self.width, self.height = width, height end
+
+--- Get the size of this element
+-- @returns {int}, {int}
+function TextInput:getSize() return self.width, self.height end
+
 local function getClickedIndex(text, relativeMouseX)
    relativeMouseX = relativeMouseX + HOVER_CURSOR_HALF_WIDTH
    local from, to = 0, #text

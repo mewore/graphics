@@ -41,27 +41,46 @@ local MAX_HUE = 360
 function ColourPickerHueSlider:create(correspondingSquare, options)
    options = options or {}
 
-   local imageData = love.image.newImageData(WIDTH, HEIGHT)
-   for y = 0, HEIGHT - 1 do
-      local red, green, blue = hslToRgb((y / HEIGHT) * MAX_HUE, 1, 0.7)
-      for x = 0, WIDTH - 1 do
-         imageData:setPixel(x, y, red, green, blue, 1)
-      end
-   end
-
    local this = {
       x = 0,
       y = 0,
-      width = WIDTH,
-      height = HEIGHT,
       correspondingSquare = correspondingSquare,
       hue = correspondingSquare.hue,
-      image = love.graphics.newImage(imageData)
    }
    setmetatable(this, self)
 
+   this:setSize(WIDTH, HEIGHT)
    return this
 end
+
+--- Change the position of this element
+-- @param x {number} The new X left position
+-- @param y {number} The new Y top position
+function ColourPickerHueSlider:setPosition(x, y) self.x, self.y = x, y end
+
+--- Get both the X and the Y position of this element
+-- @returns {int}, {int}
+function ColourPickerHueSlider:getPosition() return self.x, self.y end
+
+--- Change the size of this element
+-- @param width {number} The new width
+-- @param height {number} The new height
+function ColourPickerHueSlider:setSize(width, height)
+   local imageData = love.image.newImageData(width, height)
+   for y = 0, height - 1 do
+      local red, green, blue = hslToRgb((y / height) * MAX_HUE, 1, 0.7)
+      for x = 0, width - 1 do
+         imageData:setPixel(x, y, red, green, blue, 1)
+      end
+   end
+   self.image = love.graphics.newImage(imageData)
+
+   self.width, self.height = width, height
+end
+
+--- Get the size of this element
+-- @returns {int}, {int}
+function ColourPickerHueSlider:getSize() return self.width, self.height end
 
 --- LOVE update handler
 function ColourPickerHueSlider:update()

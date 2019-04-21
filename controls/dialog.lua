@@ -33,7 +33,7 @@ function Dialog:create(title, message, controls, buttons)
       y = 0,
       width = DEFAULT_WIDTH,
       contentWidth = DEFAULT_WIDTH,
-      height = 0,
+      height = TITLE_HEIGHT,
       value = "",
       titleText = love.graphics.newText(TITLE_FONT, title),
       messageText = nil,
@@ -49,7 +49,9 @@ function Dialog:create(title, message, controls, buttons)
    if controls and #controls > 0 then
       this.contentWidth = 0
       for _, control in ipairs(controls) do
-         this.contentWidth = math.max(this.contentWidth, control.width)
+         local controlWidth, controlHeight = control:getSize()
+         this.height = this.height + MARGIN_PER_ELEMENT + controlHeight
+         this.contentWidth = math.max(this.contentWidth, controlWidth)
       end
    end
    this.width = this.contentWidth + PADDING_SIDES * 2
@@ -59,12 +61,7 @@ function Dialog:create(title, message, controls, buttons)
       this.messageText = love.graphics.newText(MESSAGE_FONT, table.concat(wrappedMessage, "\n"))
       this.messageHeight = this.messageText:getHeight()
    end
-
-   this.height = TITLE_HEIGHT + MARGIN_PER_ELEMENT + this.messageHeight
-
-   for i = 1, #controls do
-      this.height = this.height + MARGIN_PER_ELEMENT + controls[i].height
-   end
+   this.height = this.height + MARGIN_PER_ELEMENT + this.messageHeight
 
    this.height = this.height + MARGIN_PER_ELEMENT + FOOTER_PADDING_TOP + buttons[1].height +
          math.floor(buttons[1].height / 3)
@@ -111,10 +108,8 @@ function Dialog:repositionIfNecessary()
 
    for i = 1, #self.controls do
       y = y + MARGIN_PER_ELEMENT
-      self.controls[i].x = self.x + PADDING_SIDES
-      self.controls[i].y = y
+      self.controls[i]:setPosition(self.x + PADDING_SIDES, y)
       y = y + self.controls[i].height
-      self.controls[i]:update()
    end
 
    y = y + MARGIN_PER_ELEMENT + FOOTER_PADDING_TOP

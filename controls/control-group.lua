@@ -8,8 +8,6 @@ function ControlGroup:create(controls)
       y = controls[1] and controls[1].y or 0,
       width = 0,
       height = 0,
-      lastX = 0,
-      lastY = 0,
       controls = controls,
    }
    setmetatable(this, self)
@@ -25,16 +23,30 @@ function ControlGroup:create(controls)
    return this
 end
 
+--- Change the position of this element
+-- @param x {number} The new X left position
+-- @param y {number} The new Y top position
+function ControlGroup:setPosition(x, y)
+   local dx, dy = x - self.x, y - self.y
+   for _, control in ipairs(self.controls) do
+      control.x, control.y = control.x + dx, control.y + dy
+   end
+   self.x, self.y = x, y
+end
+
+--- Get both the X and the Y position of this element
+-- @returns {int}, {int}
+function ControlGroup:getPosition() return self.x, self.y end
+
+--- Change the size of this element
+function ControlGroup:setSize(_, _) error("Cannot set the size of a control group") end
+
+--- Get the size of this element
+-- @returns {int}, {int}
+function ControlGroup:getSize() return self.width, self.height end
+
 --- LOVE update handler
 function ControlGroup:update()
-   local dx, dy = self.x - self.lastX, self.y - self.lastY
-   if dx ~= 0 or dy ~= 0 then
-      for _, control in ipairs(self.controls) do
-         control.x, control.y = control.x + dx, control.y + dy
-      end
-   end
-   self.lastX, self.lastY = self.x, self.y
-
    for _, control in ipairs(self.controls) do
       control:update()
    end
