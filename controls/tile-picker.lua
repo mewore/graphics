@@ -33,10 +33,10 @@ local function map(array, functionToApply)
 end
 
 --- A picker of tiles, including the empty one (0)
-function TilePicker:create(tilesheets, tileNames)
+function TilePicker:create(tilesheets)
    local tileNameTexts = { love.graphics.newText(TILE_NAME_FONT, "NONE") }
-   for i = 1, #tileNames do
-      tileNameTexts[i + 1] = love.graphics.newText(TILE_NAME_FONT, tileNames[i])
+   for i = 1, #tilesheets do
+      tileNameTexts[i + 1] = love.graphics.newText(TILE_NAME_FONT, tilesheets[i].name)
    end
 
    local this = {

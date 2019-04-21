@@ -17,14 +17,6 @@ local MAP_HEIGHT = 32
 local SAVE_BUTTON = "s"
 local LOAD_BUTTON = "l"
 
-local function map(array, functionToApply)
-   local newArray = {}
-   for index, value in ipairs(array) do
-      newArray[index] = functionToApply(value)
-   end
-   return newArray
-end
-
 local TILE_EMPTY = 0
 
 local LEFT_MOUSE_BUTTON = 1
@@ -51,36 +43,36 @@ function MapEditor:create(mapPath, spritesheetDirectoryPath)
 
    local tileWidth, tileHeight
    local allTilesheetFiles = spritesheetDirectory:getFiles("png")
-   local spritesheets = map(allTilesheetFiles, function(file)
+   local spritesheets = {}
+   for _, file in ipairs(allTilesheetFiles) do
       local infoFile = tileNameToInfoFile[file.name]
       if infoFile == nil then
-         error("There is no '" .. file.name .. ".json' file in " .. spritesheetDirectory.path)
+         print("There is no '" .. file.name .. ".json' file in " .. spritesheetDirectory.path)
+      else
+         local info = infoFile:readAsJson()
+         if tileWidth == nil then
+            tileWidth = info.width
+            tileHeight = info.height
+         elseif tileWidth ~= info.width then
+            error("Tile '" .. file.name .. "' has a width of " .. info.width ..
+                  ", which is not consistent with the established width - " .. tileWidth)
+         elseif tileHeight ~= info.height then
+            error("Tile '" .. file.name .. "' has a height of " .. info.height ..
+                  ", which is not consistent with the established height - " .. tileHeight)
+         end
+         local fileData = love.filesystem.newFileData(file:read(), file.path)
+         local imageData = love.image.newImageData(fileData)
+         spritesheets[#spritesheets + 1] = Spritesheet:create(imageData, tileWidth, tileHeight, file.name, true)
       end
-      local info = infoFile:readAsJson()
-      if tileWidth == nil then
-         tileWidth = info.width
-         tileHeight = info.height
-      elseif tileWidth ~= info.width then
-         error("Tile '" .. file.name .. "' has a width of " .. info.width ..
-               ", which is not consistent with the established width - " .. tileWidth)
-      elseif tileHeight ~= info.height then
-         error("Tile '" .. file.name .. "' has a height of " .. info.height ..
-               ", which is not consistent with the established height - " .. tileHeight)
-      end
-      local fileData = love.filesystem.newFileData(file:read(), file.path)
-      local imageData = love.image.newImageData(fileData)
-      return Spritesheet:create(imageData, tileWidth, tileHeight, file.name, true)
-   end)
+   end
    local navigator = Navigator:create(MAP_WIDTH * tileWidth, MAP_HEIGHT, tileHeight)
-
-   local tileNames = map(allTilesheetFiles, function(file) return file.name end)
 
    local paintDisplayPreviews = {}
    local paintDisplay = PaintDisplay:create(#spritesheets >= 1 and 1 or 0, #spritesheets >= 2 and 2 or 0, function(x, y, tile)
       if tile ~= TILE_EMPTY then
          love.graphics.draw(spritesheets[tile].originalImage, paintDisplayPreviews[tile], x, y)
       end
-   end, TilePicker:create(spritesheets, tileNames))
+   end, TilePicker:create(spritesheets))
 
    for i = 1, #spritesheets do
       paintDisplayPreviews[i] = love.graphics.newQuad(0, 0, paintDisplay.previewWidth, paintDisplay.previewHeight,
@@ -142,7 +134,7 @@ function MapEditor:create(mapPath, spritesheetDirectoryPath)
                this.imageEditor = nil
             end
             this.imageEditor.onSave = function(imageData)
-               spritesheets[tile] = Spritesheet:create(imageData, tileWidth, tileHeight, tileNames[tile], true)
+               spritesheets[tile] = Spritesheet:create(imageData, tileWidth, tileHeight, spritesheets[tile].name, true)
                paintDisplayPreviews[tile] = love.graphics.newQuad(0, 0, paintDisplay.previewWidth,
                   paintDisplay.previewHeight, spritesheets[tile].originalImage:getDimensions())
                map.spriteBatches[tile] = love.graphics.newSpriteBatch(spritesheets[tile].image, MAP_WIDTH * MAP_WIDTH)
