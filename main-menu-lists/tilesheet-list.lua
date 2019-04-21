@@ -20,25 +20,31 @@ local NEW_TILESHEET_ITEM = "(+) New tilesheet"
 
 --- A list of tilesheets in the current working directory
 function TilesheetList:create()
-   local tilesheetFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("png")
-   local tilesheetInfoFiles = NativeFile:create(TILESHEET_DIRECTORY):getFiles("json")
-   local tilesheetInfoByName = {}
-   for _, tilesheetInfoFile in ipairs(tilesheetInfoFiles) do
-      tilesheetInfoByName[tilesheetInfoFile.name] = tilesheetInfoFile:readAsJson()
+   local files, pngFileTable, jsonFileTable = {}, {}, {}
+   for _, pngFile in ipairs(NativeFile:create(TILESHEET_DIRECTORY):getFiles("png")) do
+      pngFileTable[pngFile.name] = pngFile
+      files[#files + 1] = pngFile.name
    end
+   for _, jsonFile in ipairs(NativeFile:create(TILESHEET_DIRECTORY):getFiles("json")) do
+      jsonFileTable[jsonFile.name] = jsonFile
+      if not pngFileTable[jsonFile.name] then files[#files + 1] = jsonFile.name end
+   end
+   table.sort(files)
 
    local tilesheetItems = { { value = NEW_TILESHEET_ITEM } }
-   for _, file in ipairs(tilesheetFiles) do
-      local tilesheetInfo = tilesheetInfoByName[file.name]
-      if not tilesheetInfo then
-         error("There is no " .. file.name .. ".json file corresponding to " .. file.filename)
+   for _, name in ipairs(files) do
+      if not pngFileTable[name] or not jsonFileTable[name] then
+         print("Tilesheet " .. name .. " has no .json or no .map file.")
+         tilesheetItems[#tilesheetItems + 1] = { value = name, disabled = true }
+      else
+         local tilesheetInfo = jsonFileTable[name]:readAsJson()
+         tilesheetItems[#tilesheetItems + 1] = {
+            value = name,
+            icon = pngFileTable[name]:readAsImage(),
+            iconQuadWidth = tilesheetInfo.width,
+            iconQuadHeight = tilesheetInfo.height,
+         }
       end
-      tilesheetItems[#tilesheetItems + 1] = {
-         value = file.name,
-         icon = file:readAsImage(),
-         iconQuadWidth = tilesheetInfo.width,
-         iconQuadHeight = tilesheetInfo.height,
-      }
    end
 
    local list = List:create(tilesheetItems)
@@ -86,7 +92,7 @@ function TilesheetList:create()
          dialog = Dialog:create("Create a new tilesheet", nil,
             { nameInput, widthInput, heightInput }, { cancelButton, okButton })
       else
-         openEditor(TileEditor:create(TILESHEET_DIRECTORY .. "/" .. nameInput.value .. ".png"))
+         openEditor(TileEditor:create(TILESHEET_DIRECTORY .. "/" .. value .. ".png"))
       end
    end)
 
