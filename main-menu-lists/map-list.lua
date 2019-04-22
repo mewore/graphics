@@ -26,49 +26,51 @@ function MapList:create()
    table.sort(files)
 
    local mapItems = { { value = NEW_MAP_ITEM } }
-   local list
 
    for _, name in ipairs(files) do
       if not jsonFileTable[name] or not mapFileTable[name] then
          print("Map " .. name .. " has no .json or no .map file.")
          mapItems[#mapItems + 1] = { value = name, disabled = true }
       else
-         local mapItem = { value = name }
-
-         local renameHandler = function()
-            local nameInput = TextInput:create(300, "Name", mapFileTable[name].name, {
-               kebabCase = true,
-               validations = { function(value) return not list:containsValue(value) end }
-            })
-
-            local okButton = Button:create("OK", "solid", function()
-               if not (nameInput.isValid) then
-                  return
-               end
-
-               mapFileTable[name] = mapFileTable[name]:rename(nameInput.value .. ".map")
-               jsonFileTable[name] = jsonFileTable[name]:rename(nameInput.value .. ".json")
-
-               list:removeItem(mapItem)
-               mapItem.value = nameInput.value
-               list:addItemAndKeepSorted(mapItem)
-               viewStack:popView(self.dialog)
-               self.dialog = nil
-            end)
-            local cancelButton = Button:create("Cancel", nil, function()
-               viewStack:popView(self.dialog)
-               self.dialog = nil
-            end)
-
-            self.dialog = Dialog:create("Rename map '" .. mapItem.value .. "'", "What should the new name of the map be?",
-               { nameInput }, { cancelButton, okButton })
-         end
-         mapItem.buttons = { { label = "Rename", clickHandler = renameHandler, colour = { r = 0.6, g = 0.8, b = 1 } } }
-         mapItems[#mapItems + 1] = mapItem
+         mapItems[#mapItems + 1] = { value = name }
       end
    end
 
-   list = List:create(mapItems)
+   local list
+   local renameButton = {
+      label = "Rename",
+      colour = { r = 0.6, g = 0.8, b = 1 },
+      appliesToItem = function(item) return item.value ~= NEW_MAP_ITEM end,
+      clickHandler = function(item)
+         local dialog
+         local nameInput = TextInput:create(300, "Name", item.value, {
+            kebabCase = true,
+            validations = { function(value) return not list:containsValue(value) end }
+         })
+
+         local okButton = Button:create("OK", "solid", function()
+            if not (nameInput.isValid) then return end
+            local oldName, newName = item.value, nameInput.value
+
+            if mapFileTable[oldName] then
+               mapFileTable[oldName], mapFileTable[newName] = nil, mapFileTable[oldName]:rename(newName .. ".png")
+            end
+            if jsonFileTable[oldName] then
+               jsonFileTable[oldName], jsonFileTable[newName] = nil, jsonFileTable[oldName]:rename(newName .. ".json")
+            end
+
+            list:removeItem(item)
+            item.value = newName
+            list:addItemAndKeepSorted(item)
+            viewStack:popView(dialog)
+         end)
+         local cancelButton = Button:create("Cancel", nil, function() viewStack:popView(dialog) end)
+
+         dialog = Dialog:create("Rename map '" .. item.value .. "'", "What should the new name of the map be?",
+            { nameInput }, { cancelButton, okButton })
+      end,
+   }
+   list = List:create(mapItems, { buttons = { renameButton } })
    local this = {
       list = list,
    }
