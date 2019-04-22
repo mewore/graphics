@@ -53,7 +53,7 @@ function MapList:create()
             local oldName, newName = item.value, nameInput.value
 
             if mapFileTable[oldName] then
-               mapFileTable[oldName], mapFileTable[newName] = nil, mapFileTable[oldName]:rename(newName .. ".png")
+               mapFileTable[oldName], mapFileTable[newName] = nil, mapFileTable[oldName]:rename(newName .. ".map")
             end
             if jsonFileTable[oldName] then
                jsonFileTable[oldName], jsonFileTable[newName] = nil, jsonFileTable[oldName]:rename(newName .. ".json")
