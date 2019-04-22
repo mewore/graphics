@@ -16,6 +16,7 @@ local MOVEMENT_KEYMAP = {
 local MOUSE_SCROLL_PAN_MULTIPLIER = 25
 
 local INITIAL_ZOOM_MULTIPLIER = 0.95
+local MAX_INITIAL_ZOOM = 2
 
 local CONTROL_PRESS_MOVEMENT_DELAY = 0.2
 
@@ -80,11 +81,13 @@ end
 -- @param canvasHeight {int} The canvas height
 function Navigator:setDimensionsAndReposition(canvasWidth, canvasHeight)
    local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
-   self.zoom = math.min(screenWidth / canvasWidth, screenHeight / canvasHeight) * INITIAL_ZOOM_MULTIPLIER
+   self.zoom = math.min(math.min(screenWidth / canvasWidth, screenHeight / canvasHeight) * INITIAL_ZOOM_MULTIPLIER,
+      MAX_INITIAL_ZOOM)
 
    self.x, self.y = 0, 0
    local rightX, bottomY = self:screenToAbsolute(screenWidth, screenHeight)
    self.x, self.y = -math.floor((rightX - canvasWidth) / 2), -math.floor((bottomY - canvasHeight) / 2)
+   print("ZOOM:", self.zoom)
 end
 
 --- Convert screen (x, y) coordinates to absolute ones
