@@ -9,7 +9,7 @@ local BOX_OUTLINE_COLOUR = { r = 0, g = 0, b = 0, a = 1 }
 local BOX_OUTLINE_COLOUR_INVALID = { r = 0.8, g = 0, b = 0.1, a = 1 }
 
 local TEXT_COLOUR = { r = 0.2, g = 0.2, b = 0.2, a = 1 }
-local INVALID_TEXT_COLOUR = { r = 0.5, g = 0.1, b = 0.1, a = 1 }
+local INVALID_TEXT_COLOUR = { r = 0.3, g = 0.1, b = 0.1, a = 1 }
 local PLACEHOLDER_COLOUR = { r = 0.2, g = 0.2, b = 0.2, a = 0.7 }
 local BORDER_RADIUS = 5
 local TEXT_PADDING_LEFT = 5
@@ -268,7 +268,7 @@ function TextInput:draw()
       local x2 = self.x + TEXT_PADDING_LEFT + TEXT_FONT:getWidth(string.sub(self.value, 1, self.selectionFromIndex))
       local xFrom, xTo = math.min(x1, x2), math.max(x1, x2)
       local topY = self.y + TEXT_PADDING_TOP
-      love.graphics.setColor(0.2, 0.6, 1)
+      love.graphics.setColor(0.2, 0.6, 1, 0.5)
       love.graphics.rectangle("fill", xFrom, topY, xTo - xFrom, TEXT_FONT_SIZE)
       love.graphics.reset()
    end
