@@ -53,6 +53,9 @@ function Dialog:create(title, message, controls, buttons)
          this.height = this.height + MARGIN_PER_ELEMENT + controlHeight
          this.contentWidth = math.max(this.contentWidth, controlWidth)
       end
+      love.keyboard.focus(controls[1])
+   elseif buttons and #buttons > 0 then
+      love.keyboard.focus(buttons[#buttons - 1])
    end
    this.width = this.contentWidth + PADDING_SIDES * 2
 
