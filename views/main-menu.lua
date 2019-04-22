@@ -37,7 +37,7 @@ end
 
 --- LOVE update handler
 function MainMenu:update()
-   if love.keyboard.escapeIsPressed and self.onClose then
+   if love.keyboard.closeIsPressed and self.onClose then
       self.onClose()
    end
 

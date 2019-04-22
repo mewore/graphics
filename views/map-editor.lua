@@ -152,7 +152,7 @@ end
 --- LOVE update handler
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function MapEditor:update(dt)
-   if love.keyboard.escapeIsPressed then
+   if love.keyboard.closeIsPressed then
       self.onClose()
    end
 

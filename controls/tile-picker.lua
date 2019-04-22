@@ -62,7 +62,7 @@ end
 
 --- LOVE update handler
 function TilePicker:update()
-   if love.keyboard.escapeIsPressed then
+   if love.keyboard.closeIsPressed then
       viewStack:popView(self)
    end
 

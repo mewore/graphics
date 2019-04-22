@@ -51,6 +51,7 @@ function love.update(dt)
    love.keyboard.commandIsDown = love.keyboard.isDown("rgui") or love.keyboard.isDown("lgui")
    love.keyboard.escapeIsPressed = love.keyboard.keysPressed["escape"]
    love.keyboard.returnIsPressed = love.keyboard.keysPressed["return"]
+   love.keyboard.closeIsPressed = love.keyboard.keysPressed["w"] and love.keyboard.controlIsDown
 
    viewStack:update(dt)
 
