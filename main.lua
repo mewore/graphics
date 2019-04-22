@@ -40,6 +40,7 @@ local focusedOnto, previouslyFocusedOnto
 function love.keyboard.focus(element)
    love.keyboard.focusedSince = love.timer.getTime()
    focusedOnto = element
+   if element.onForcedFocus then element:onForcedFocus() end
 end
 
 --local firstRegisteredFocusable
@@ -73,10 +74,7 @@ function love.update(dt)
 
    viewStack:update(dt)
 
-   local backgroundMouseInfo = love.mouse.registerSolid(background, { isWholeScreen = true })
-   if backgroundMouseInfo.clickCount > 0 then
-      love.keyboard.focus(nil)
-   end
+   if love.mouse.registerSolid(background, { isWholeScreen = true }).clickCount > 0 then focusedOnto = nil end
 
    love.keyboard.keysPressed = {}
    love.keyboard.keysReleased = {}

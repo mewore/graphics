@@ -250,6 +250,10 @@ local function setColour(colour)
    return true
 end
 
+function TextInput:onForcedFocus()
+   self.selectionFromIndex, self.caretIndex = 0, #self.value
+end
+
 --- LOVE draw handler
 function TextInput:draw()
    love.graphics.drawFocusOutline(self)
