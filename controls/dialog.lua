@@ -88,7 +88,7 @@ function Dialog:update(dt)
       self.controls[i]:update(dt)
    end
 
-   for i = #self.buttons, 1, -1 do
+   for i = 1, #self.buttons do
       self.buttons[i]:update(dt)
    end
 end

@@ -11,15 +11,11 @@ function love.load()
    love.graphics.setDefaultFilter("nearest", "nearest")
 end
 
---local focusDelta
 
 --- LOVE key pressed handler
 -- @param key {string} - The pressed key
 function love.keypressed(key)
    print("Pressed:", key)
-   --   if key == "tab" then
-   --      focusDelta = focusDelta + (love.keyboard.isDown("rshift") or love.keyboard.isDown("lshift")) and -1 or 1
-   --   end
    love.keyboard.keysPressed[key] = true
 end
 
@@ -43,14 +39,16 @@ function love.keyboard.focus(element)
    if element.onForcedFocus then element:onForcedFocus() end
 end
 
---local firstRegisteredFocusable
+local allFocusable = {}
+local focusedIndex
 function love.keyboard.registerFocusable(element)
-   --   firstRegisteredFocusable = firstRegisteredFocusable or element
+   allFocusable[#allFocusable + 1] = element
    if love.mouse.registerSolid(element).clickCount > 0 then
       love.keyboard.focusedSince = love.timer.getTime()
       focusedOnto = element
    end
    if focusedOnto == nil and previouslyFocusedOnto == element then focusedOnto = element end
+   if focusedOnto == element then focusedIndex = #allFocusable end
    return focusedOnto == element
 end
 
@@ -71,10 +69,21 @@ function love.update(dt)
    love.keyboard.returnIsPressed = love.keyboard.keysPressed["return"]
    love.keyboard.closeIsPressed = love.keyboard.keysPressed["w"] and love.keyboard.controlIsDown
    previouslyFocusedOnto, focusedOnto = focusedOnto, nil
+   allFocusable = {}
+   focusedIndex = 0
 
    viewStack:update(dt)
 
    if love.mouse.registerSolid(background, { isWholeScreen = true }).clickCount > 0 then focusedOnto = nil end
+
+   if love.keyboard.keysPressed["tab"] and #allFocusable > 0 then
+      local focusDelta = love.keyboard.shiftIsDown and -1 or 1
+      local element = allFocusable[(math.max(focusedIndex + focusDelta, 0) - 1) % #allFocusable + 1]
+      print(focusedIndex, "->", (math.max(focusedIndex + focusDelta, 0) - 1) % #allFocusable + 1)
+      love.keyboard.focusedSince = love.timer.getTime()
+      focusedOnto = element
+      if element.onTabFocus then element:onTabFocus() end
+   end
 
    love.keyboard.keysPressed = {}
    love.keyboard.keysReleased = {}

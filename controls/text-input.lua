@@ -262,6 +262,10 @@ function TextInput:onForcedFocus()
    self.selectionFromIndex, self.caretIndex = 0, #self.value
 end
 
+function TextInput:onTabFocus()
+   self.selectionFromIndex, self.caretIndex = 0, #self.value
+end
+
 --- LOVE draw handler
 function TextInput:draw()
    love.graphics.drawFocusOutline(self)
