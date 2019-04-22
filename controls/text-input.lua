@@ -204,7 +204,7 @@ function TextInput:update()
       if love.keyboard.keysPressed["backspace"] then
          if self:hasSelectedText() then
             self:deleteSelectedText()
-         else
+         elseif self.caretIndex > 0 then
             self:setValue(string.sub(self.value, 1, self.caretIndex - 1) .. string.sub(self.value, self.caretIndex + 1))
             self.caretIndex = math.max(self.caretIndex - 1, 0)
             self.selectionFromIndex = self.caretIndex
@@ -213,7 +213,7 @@ function TextInput:update()
       if love.keyboard.keysPressed["delete"] then
          if self:hasSelectedText() then
             self:deleteSelectedText()
-         else
+         elseif self.caretIndex < #self.value then
             self:setValue(string.sub(self.value, 1, self.caretIndex) .. string.sub(self.value, self.caretIndex + 2))
          end
       end
