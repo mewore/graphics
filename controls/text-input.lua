@@ -1,11 +1,15 @@
 TextInput = {}
 TextInput.__index = TextInput
 
+local INVALID_BOX_NOT_FOCUSED_OR_HOVER_FILL_COLOUR = { r = 1, g = 0.85, b = 0.95, a = 1 }
 local BOX_NOT_FOCUSED_OR_HOVER_FILL_COLOUR = { r = 0.9, g = 0.95, b = 1, a = 1 }
+local INVALID_BOX_FOCUSED_OR_HOVER_FILL_COLOUR = { r = 1, g = 0.95, b = 0.95, a = 1 }
+local BOX_FOCUSED_OR_HOVER_FILL_COLOUR = { r = 0.95, g = 0.95, b = 1, a = 1 }
 local BOX_OUTLINE_COLOUR = { r = 0, g = 0, b = 0, a = 1 }
 local BOX_OUTLINE_COLOUR_INVALID = { r = 0.8, g = 0, b = 0.1, a = 1 }
 
 local TEXT_COLOUR = { r = 0.2, g = 0.2, b = 0.2, a = 1 }
+local INVALID_TEXT_COLOUR = { r = 0.5, g = 0.1, b = 0.1, a = 1 }
 local PLACEHOLDER_COLOUR = { r = 0.2, g = 0.2, b = 0.2, a = 0.7 }
 local BORDER_RADIUS = 5
 local TEXT_PADDING_LEFT = 5
@@ -249,10 +253,11 @@ end
 --- LOVE draw handler
 function TextInput:draw()
    love.graphics.drawFocusOutline(self)
-   if not self.isFocused and not self.isHovered then
-      setColour(BOX_NOT_FOCUSED_OR_HOVER_FILL_COLOUR)
-      love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, BORDER_RADIUS, BORDER_RADIUS)
-   end
+   local backgroundColour = (self.isFocused or self.isHovered)
+         and (self.isValid and BOX_FOCUSED_OR_HOVER_FILL_COLOUR or INVALID_BOX_FOCUSED_OR_HOVER_FILL_COLOUR)
+         or (self.isValid and BOX_NOT_FOCUSED_OR_HOVER_FILL_COLOUR or INVALID_BOX_NOT_FOCUSED_OR_HOVER_FILL_COLOUR);
+   setColour(backgroundColour)
+   love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, BORDER_RADIUS, BORDER_RADIUS)
 
    if self.isFocused and self.selectionFromIndex ~= self.caretIndex then
       local x1 = self.x + TEXT_PADDING_LEFT + TEXT_FONT:getWidth(string.sub(self.value, 1, self.caretIndex))
@@ -265,7 +270,7 @@ function TextInput:draw()
    end
 
    if self.value and #self.value > 0 then
-      setColour(TEXT_COLOUR)
+      setColour(self.isValid and TEXT_COLOUR or INVALID_TEXT_COLOUR)
       love.graphics.draw(self.text, self.x + TEXT_PADDING_LEFT, self.y + TEXT_PADDING_TOP)
    elseif self.placeholderText then
       setColour(PLACEHOLDER_COLOUR)
