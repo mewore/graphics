@@ -53,7 +53,7 @@ function SpriteEditor:create(spriteDirectory)
    local animationList = List:create(animationListItems)
    animationList:setSize(SIDEBAR_WIDTH)
 
-   local navigator = Navigator:create()
+   local navigator = Navigator:create(nil, nil, SIDEBAR_WIDTH)
    local this = {
       filename = nil,
       imageData = nil,

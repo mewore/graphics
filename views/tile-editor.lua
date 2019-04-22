@@ -40,7 +40,8 @@ function TileEditor:create(filename)
       love.graphics.rectangle("fill", x, y, width, height)
    end, ColourPicker:create())
 
-   local navigator = Navigator:create(width * TILE_WIDTH, height * TILE_HEIGHT)
+   local sidebar = Sidebar:create({ paintDisplay })
+   local navigator = Navigator:create(width * TILE_WIDTH, height * TILE_HEIGHT, sidebar.width)
    local this = {
       filename = filename,
       imageData = imageData,
@@ -52,7 +53,7 @@ function TileEditor:create(filename)
          [TOOL_PIPETTE] = TileControls:create(WHITE, TILE_WIDTH, TILE_HEIGHT, width, height, navigator, false),
       },
       navigator = navigator,
-      sidebar = Sidebar:create({ paintDisplay }),
+      sidebar = sidebar,
       onSave = function() end,
    }
    setmetatable(this, self)

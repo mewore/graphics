@@ -65,7 +65,6 @@ function MapEditor:create(mapPath, spritesheetDirectoryPath)
          spritesheets[#spritesheets + 1] = Spritesheet:create(imageData, tileWidth, tileHeight, file.name, true)
       end
    end
-   local navigator = Navigator:create(MAP_WIDTH * tileWidth, MAP_HEIGHT, tileHeight)
 
    local paintDisplayPreviews = {}
    local paintDisplay = PaintDisplay:create(#spritesheets >= 1 and 1 or 0, #spritesheets >= 2 and 2 or 0, function(x, y, tile)
@@ -78,6 +77,9 @@ function MapEditor:create(mapPath, spritesheetDirectoryPath)
       paintDisplayPreviews[i] = love.graphics.newQuad(0, 0, paintDisplay.previewWidth, paintDisplay.previewHeight,
          spritesheets[i].originalImage:getDimensions())
    end
+
+   local sidebar = Sidebar:create({ paintDisplay })
+   local navigator = Navigator:create(MAP_WIDTH * tileWidth, MAP_HEIGHT * tileHeight, sidebar.width)
 
    local map = Map:create(MAP_WIDTH, MAP_HEIGHT, tileWidth, tileHeight, spritesheets)
 
@@ -97,7 +99,7 @@ function MapEditor:create(mapPath, spritesheetDirectoryPath)
          [TOOL_POINT_EDITOR] = PointEditor:create(navigator),
       },
       imageEditor = nil,
-      sidebar = Sidebar:create({ paintDisplay }),
+      sidebar = sidebar,
       tileControlsAreDisabled = false,
       paintDisplay = paintDisplay,
       onClose = function() end,

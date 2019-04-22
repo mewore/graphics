@@ -21,12 +21,13 @@ local MAX_INITIAL_ZOOM = 2
 local CONTROL_PRESS_MOVEMENT_DELAY = 0.2
 
 --- A controller that keeps track of an X and Y offset as well as a zoom ratio
-function Navigator:create(canvasWidth, canvasHeight)
+function Navigator:create(canvasWidth, canvasHeight, sidebarWidth)
    local this = {
       x = 0,
       y = 0,
       zoom = 1,
       controlLastDown = 0,
+      sidebarWidth = sidebarWidth or 0,
    }
    setmetatable(this, self)
 
@@ -80,14 +81,15 @@ end
 -- @param canvasWidth {int} The canvas width
 -- @param canvasHeight {int} The canvas height
 function Navigator:setDimensionsAndReposition(canvasWidth, canvasHeight)
-   local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
+   local screenWidth, screenHeight = love.graphics.getWidth() - self.sidebarWidth, love.graphics.getHeight()
    self.zoom = math.min(math.min(screenWidth / canvasWidth, screenHeight / canvasHeight) * INITIAL_ZOOM_MULTIPLIER,
       MAX_INITIAL_ZOOM)
 
    self.x, self.y = 0, 0
    local rightX, bottomY = self:screenToAbsolute(screenWidth, screenHeight)
-   self.x, self.y = -math.floor((rightX - canvasWidth) / 2), -math.floor((bottomY - canvasHeight) / 2)
-   print("ZOOM:", self.zoom)
+   local sidebarAbsoluteWidth, _ = self:screenToAbsolute(self.sidebarWidth, 0)
+   self.x = -math.floor((rightX - canvasWidth) / 2 + sidebarAbsoluteWidth)
+   self.y = -math.floor((bottomY - canvasHeight) / 2)
 end
 
 --- Convert screen (x, y) coordinates to absolute ones
