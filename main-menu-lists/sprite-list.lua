@@ -18,8 +18,10 @@ end
 --- A list of sprites in the current working directory
 function SpriteList:create()
    local spriteDirectories = NativeFile:create(SPRITE_DIRECTORY):getDirectories()
+   local spriteDirectoryTable = {}
    local spriteItems = { { value = NEW_SPRITE_ITEM } }
    for _, spriteDirectory in ipairs(spriteDirectories) do
+      spriteDirectoryTable[spriteDirectory.name] = spriteDirectory
       local item = { value = spriteDirectory.name }
       local spriteIconFile = spriteDirectory:getChild("icon.png")
       if not spriteIconFile:isFile() then
@@ -35,7 +37,39 @@ function SpriteList:create()
       spriteItems[#spriteItems + 1] = item
    end
 
-   local list = List:create(spriteItems, { iconSize = 32 })
+   local list
+   local renameButton = {
+      label = "Rename",
+      colour = { r = 0.6, g = 0.8, b = 1 },
+      appliesToItem = function(item) return item.value ~= NEW_SPRITE_ITEM end,
+      clickHandler = function(item)
+         local dialog
+         local nameInput = TextInput:create(300, "Name", item.value, {
+            kebabCase = true,
+            validations = { function(value) return not list:containsValue(value) end }
+         })
+
+         local okButton = Button:create("OK", "solid", function()
+            if not (nameInput.isValid) then return end
+            local oldName, newName = item.value, nameInput.value
+
+            if spriteDirectoryTable[oldName] then
+               spriteDirectoryTable[newName] = spriteDirectoryTable[oldName]:rename(newName)
+               spriteDirectoryTable[oldName] = nil
+            end
+
+            list:removeItem(item)
+            item.value = newName
+            list:addItemAndKeepSorted(item)
+            viewStack:popView(dialog)
+         end)
+         local cancelButton = Button:create("Cancel", nil, function() viewStack:popView(dialog) end)
+
+         dialog = Dialog:create("Rename sprite '" .. item.value .. "'", "What should the new name of the sprite be?",
+            { nameInput }, { cancelButton, okButton })
+      end,
+   }
+   list = List:create(spriteItems, { iconSize = 32, buttons = { renameButton } })
    local this = {
       list = list,
    }
