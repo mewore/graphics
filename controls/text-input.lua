@@ -127,14 +127,14 @@ function TextInput:update()
    local mouseInfo = love.mouse.registerSolid(self)
 
    if mouseInfo.dragStarted then
-      love.keyboard.focus(self)
       self.selectionFromIndex = getClickedIndex(self.value, mouseInfo.drag.fromX - self.x - TEXT_PADDING_LEFT)
    end
    if mouseInfo.drag then
       self.caretIndex = getClickedIndex(self.value, mouseInfo.drag.toX - self.x - TEXT_PADDING_LEFT)
    end
 
-   if love.keyboard.focusedOnto == self then
+   self.isFocused = love.keyboard.registerFocusable(self)
+   if self.isFocused then
       -- Typing
       if #love.keyboard.input > 0 then
          if self:hasSelectedText() then
@@ -247,12 +247,12 @@ end
 
 --- LOVE draw handler
 function TextInput:draw()
-   if love.keyboard.focusedOnto ~= self and not self.isHovered then
+   if not self.isFocused and not self.isHovered then
       setColour(BOX_NOT_FOCUSED_OR_HOVER_FILL_COLOUR)
       love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, BORDER_RADIUS, BORDER_RADIUS)
    end
 
-   if love.keyboard.focusedOnto == self and self.selectionFromIndex ~= self.caretIndex then
+   if self.isFocused and self.selectionFromIndex ~= self.caretIndex then
       local x1 = self.x + TEXT_PADDING_LEFT + TEXT_FONT:getWidth(string.sub(self.value, 1, self.caretIndex))
       local x2 = self.x + TEXT_PADDING_LEFT + TEXT_FONT:getWidth(string.sub(self.value, 1, self.selectionFromIndex))
       local xFrom, xTo = math.min(x1, x2), math.max(x1, x2)
@@ -270,7 +270,7 @@ function TextInput:draw()
       love.graphics.draw(self.placeholderText, self.x + TEXT_PADDING_LEFT, self.y + TEXT_PADDING_TOP)
    end
 
-   if love.keyboard.focusedOnto == self and
+   if self.isFocused and
          math.floor((love.timer.getTime() - love.keyboard.focusedSince) / BLINKER_INTERVAL) % 2 == 0 then
       setColour(TEXT_COLOUR)
       local x = self.x + TEXT_PADDING_LEFT + TEXT_FONT:getWidth(string.sub(self.value, 1, self.caretIndex))

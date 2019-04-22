@@ -31,9 +31,19 @@ function love.textinput(text)
    love.keyboard.input = love.keyboard.input .. text
 end
 
+local focusedOnto, previouslyFocusedOnto
 function love.keyboard.focus(element)
    love.keyboard.focusedSince = love.timer.getTime()
-   love.keyboard.focusedOnto = element
+   focusedOnto = element
+end
+
+function love.keyboard.registerFocusable(element)
+   if love.mouse.registerSolid(element).clickCount > 0 then
+      love.keyboard.focusedSince = love.timer.getTime()
+      focusedOnto = element
+   end
+   if focusedOnto == nil and previouslyFocusedOnto == element then focusedOnto = element end
+   return focusedOnto == element
 end
 
 local advancedMouseInput = AdvancedMouseInput:create()
@@ -55,11 +65,12 @@ function love.update(dt)
 
    viewStack:update(dt)
 
-   local backgroundMouseInfo = love.mouse.registerSolid(background, {isWholeScreen = true})
+   local backgroundMouseInfo = love.mouse.registerSolid(background, { isWholeScreen = true })
    if backgroundMouseInfo.clickCount > 0 then
       love.keyboard.focus(nil)
    end
 
+   previouslyFocusedOnto, focusedOnto = focusedOnto, nil
    love.keyboard.keysPressed = {}
    love.keyboard.keysReleased = {}
    love.keyboard.input = ""
