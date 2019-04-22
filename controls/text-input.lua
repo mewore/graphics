@@ -69,6 +69,7 @@ function TextInput:create(width, placeholder, initialValue, options)
       caretIndex = 0,
       selectionFromIndex = 0,
       outlineRadius = BORDER_RADIUS,
+      confirmHandlers = {},
    }
    setmetatable(this, self)
 
@@ -127,6 +128,10 @@ local function getClickedIndex(text, relativeMouseX)
    return closestIndex
 end
 
+function TextInput:onConfirm(handler)
+   self.confirmHandlers[#self.confirmHandlers + 1] = handler
+end
+
 --- LOVE update handler
 function TextInput:update()
    local mouseInfo = love.mouse.registerSolid(self)
@@ -140,6 +145,9 @@ function TextInput:update()
 
    self.isFocused = love.keyboard.registerFocusable(self)
    if self.isFocused then
+      -- Confirming
+      if love.keyboard.returnIsPressed then for _, handler in ipairs(self.confirmHandlers) do handler() end end
+
       -- Typing
       if #love.keyboard.input > 0 then
          if self:hasSelectedText() then

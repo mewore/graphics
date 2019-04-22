@@ -83,12 +83,16 @@ function Button:getSize() return self.width, self.height end
 
 --- LOVE update handler
 function Button:update()
+   self.isFocused = love.keyboard.registerFocusable(self)
+
    local mouseInfo = love.mouse.registerSolid(self)
    if mouseInfo.isHovered then
       love.mouse.cursor = HOVER_CURSOR
-      if mouseInfo.dragConfirmed then
-         self.onClick()
-      end
+   end
+
+   if self.onClick and ((self.isFocused and love.keyboard.returnIsPressed)
+         or (mouseInfo.isHovered and mouseInfo.dragConfirmed)) then
+      self.onClick()
    end
 end
 
@@ -102,6 +106,8 @@ end
 
 --- LOVE draw handler
 function Button:draw()
+   love.graphics.drawFocusOutline(self)
+
    if setColour(BUTTON_FILL_COLOUR_PER_TYPE[self.type]) then
       love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, BORDER_RADIUS, BORDER_RADIUS)
    end

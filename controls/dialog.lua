@@ -52,6 +52,7 @@ function Dialog:create(title, message, controls, buttons)
          local controlWidth, controlHeight = control:getSize()
          this.height = this.height + MARGIN_PER_ELEMENT + controlHeight
          this.contentWidth = math.max(this.contentWidth, controlWidth)
+         if buttons and control.onConfirm then control:onConfirm(function() buttons[#buttons].onClick() end) end
       end
       love.keyboard.focus(controls[1])
    elseif buttons and #buttons > 0 then
@@ -77,10 +78,6 @@ end
 
 --- LOVE update handler
 function Dialog:update(dt)
-   if love.keyboard.returnIsPressed then
-      self.buttons[#self.buttons].onClick()
-   end
-
    if love.keyboard.escapeIsPressed then
       self.buttons[1].onClick()
    end
