@@ -126,7 +126,6 @@ function MapEditor:create(mapPath, spritesheetDirectoryPath)
          local tile = this.map:getTile(points[1].x, points[1].y)
          if tile ~= TILE_EMPTY then
             this.activeTool = this.previousTool
-            this.previousTool = TOOL_IMAGE_EDITOR
             this.imageEditor = TileEditor:create(allTilesheetFiles[tile].path)
             viewStack:pushView(this.imageEditor)
             this.imageEditor.onClose = function()
@@ -160,6 +159,9 @@ function MapEditor:update(dt)
    for hotkey, tool in pairs(TOOL_HOTKEYS) do
       if love.keyboard.keysPressed[hotkey] then
          self.tools[self.activeTool].drawingWith = nil
+         if self.activeTool ~= TOOL_IMAGE_EDITOR then
+            self.previousTool = self.activeTool
+         end
          self.activeTool = tool
       end
    end
