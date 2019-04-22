@@ -64,6 +64,7 @@ function TextInput:create(width, placeholder, initialValue, options)
       validations = options.validations or {},
       caretIndex = 0,
       selectionFromIndex = 0,
+      outlineRadius = BORDER_RADIUS,
    }
    setmetatable(this, self)
 
@@ -247,6 +248,7 @@ end
 
 --- LOVE draw handler
 function TextInput:draw()
+   love.graphics.drawFocusOutline(self)
    if not self.isFocused and not self.isHovered then
       setColour(BOX_NOT_FOCUSED_OR_HOVER_FILL_COLOUR)
       love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, BORDER_RADIUS, BORDER_RADIUS)
