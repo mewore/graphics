@@ -9,6 +9,13 @@ local OS_WINDOWS = "Windows"
 local CHECK_ATTRIBUTES_FILE_NAME = "check-attributes.bat";
 local CHECK_ATTRIBUTES_FILE_LOCATION = love.filesystem.getSaveDirectory() .. SEPARATOR .. CHECK_ATTRIBUTES_FILE_NAME;
 
+local HAS_GIT = (function()
+   local file = io.popen("git status && echo \"Git is present\"", "r")
+   local output = file:read("*a")
+   file:close()
+   return output:find("Git is present") ~= nil
+end)()
+
 --- Wrapper of the native (Lua) file operations to avoid using the limited love.filesystem
 --
 -- Mostly useful for writing in directories different than the save directory or reading from directories that are
@@ -50,9 +57,18 @@ end
 -- @returns {NativeFile} - The resulting file
 function NativeFile:rename(newName)
    local newPath = self.path:sub(1, #self.path - #self.filename) .. newName
-   local _, errorMessage = os.rename(self.path, newPath)
-   if errorMessage ~= nil then
-      error("Encountered error '" .. errorMessage .. "' while renaming '" .. self.path .. "' to '" .. newPath .. "'")
+   if HAS_GIT then
+      local file = io.popen('git mv "' .. self.path .. '" "' .. newPath .. '" && echo "Rename success"', "r")
+      local output = file:read("*a")
+      file:close()
+      if output:find("Rename success") == nil then
+         error("Failed to rename '" .. self.path .. "' to '" .. newPath .. "' with Git: " .. output)
+      end
+   else
+      local _, errorMessage = os.rename(self.path, newPath)
+      if errorMessage ~= nil then
+         error("Encountered error '" .. errorMessage .. "' while renaming '" .. self.path .. "' to '" .. newPath .. "'")
+      end
    end
    return NativeFile:create(newPath)
 end
