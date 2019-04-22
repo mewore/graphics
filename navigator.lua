@@ -17,12 +17,15 @@ local MOUSE_SCROLL_PAN_MULTIPLIER = 25
 
 local INITIAL_ZOOM_MULTIPLIER = 0.95
 
+local CONTROL_PRESS_MOVEMENT_DELAY = 0.2
+
 --- A controller that keeps track of an X and Y offset as well as a zoom ratio
 function Navigator:create(canvasWidth, canvasHeight)
    local this = {
       x = 0,
       y = 0,
       zoom = 1,
+      controlLastDown = 0,
    }
    setmetatable(this, self)
 
@@ -37,6 +40,7 @@ end
 -- @param dt {float} - The amount of time (in seconds) since the last update
 function Navigator:update(dt)
    if love.keyboard.controlIsDown then
+      self.controlLastDown = love.timer.getTime()
       return
    end
    local wantsToZoomWithScroll = love.keyboard.altIsDown or love.keyboard.commandIsDown
@@ -44,7 +48,8 @@ function Navigator:update(dt)
 
    local dx, dy = 0, 0
    for key, value in pairs(MOVEMENT_KEYMAP) do
-      if love.keyboard.isDown(key) then
+      if love.keyboard.isDown(key) and
+            (#key > 1 or love.timer.getTime() > self.controlLastDown + CONTROL_PRESS_MOVEMENT_DELAY) then
          dx, dy = dx + value.x, dy + value.y
       end
    end
