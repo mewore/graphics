@@ -67,14 +67,18 @@ function MapEditor:create(mapPath, spritesheetDirectoryPath)
    end
 
    local paintDisplayPreviews = {}
+   local paintDisplayScales = {}
    local paintDisplay = PaintDisplay:create(#spritesheets >= 1 and 1 or 0, #spritesheets >= 2 and 2 or 0, function(x, y, tile)
       if tile ~= TILE_EMPTY then
-         love.graphics.draw(spritesheets[tile].originalImage, paintDisplayPreviews[tile], x, y)
+         love.graphics.draw(spritesheets[tile].originalImage, paintDisplayPreviews[tile], x, y, 0,
+            paintDisplayScales[tile], paintDisplayScales[tile])
       end
    end, TilePicker:create(spritesheets))
 
    for i = 1, #spritesheets do
-      paintDisplayPreviews[i] = love.graphics.newQuad(0, 0, paintDisplay.previewWidth, paintDisplay.previewHeight,
+      local tileWidth, tileHeight = spritesheets[i].tileWidth, spritesheets[i].tileHeight
+      paintDisplayScales[i] = math.min(paintDisplay.previewWidth / tileWidth, paintDisplay.previewHeight / tileHeight)
+      paintDisplayPreviews[i] = love.graphics.newQuad(0, 0, tileWidth, tileHeight,
          spritesheets[i].originalImage:getDimensions())
    end
 
